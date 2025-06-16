@@ -6,11 +6,10 @@ export default function Home() {
     <>
       <Head>
         <title>Agritectum Roof Calculator</title>
-        <meta name="description" content="Calculate your roof's CO₂ impact and environmental benefit" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="description" content="Calculate roof CO₂, NOₓ and energy savings" />
       </Head>
-      <main className="min-h-screen bg-gray-50 p-6">
-        <RoofImpactDashboard />
-      </main>
+      <RoofImpactDashboard />
     </>
   );
 }
