@@ -226,13 +226,6 @@ export default function RoofImpactDashboard() {
                 <p className="text-sm text-gray-600">Roof CO₂ Impact Calculator</p>
               </div>
             </div>
-            <button
-              onClick={exportPDF}
-              className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-            >
-              <Download className="w-5 h-5" />
-              <span>Export Report</span>
-            </button>
           </div>
         </div>
       </div>
@@ -584,7 +577,7 @@ export default function RoofImpactDashboard() {
         {/* Footer */}
         <div className="text-center py-8">
           <p className="text-gray-600 text-sm">
-            © 2024 Agritectum - Sustainable Building Solutions | 
+            © 2025 Agritectum - Sustainable Building Solutions | 
             <a href="mailto:info@agritectum.com" className="text-green-600 hover:text-green-700 ml-1">
               info@agritectum.com
             </a>
