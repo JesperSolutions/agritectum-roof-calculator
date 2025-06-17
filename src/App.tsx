@@ -42,6 +42,20 @@ const ROOF_TYPES = {
     installationRate: 7,
     description: 'High-performance Triflex coating with SRI 97'
   }
+  "Green Roof": {
+  co2: 2.1, // annual CO₂ sequestration per m² in kg
+  nox: 0.05, // estimated air purification
+  energy: 1.5, // energy savings from insulation
+  lifespan: 40,
+  maintenance: 'Trim plants yearly, check drainage twice annually.',
+  color: '#34D399', // Tailwind green-400
+  materialCost: 38.50,
+  laborCost: 6.50,
+  totalCost: 45.00,
+  installationRate: 12,
+  description: 'Extensive green roof system with sedum or grass'
+}
+
 };
 
 export default function RoofImpactDashboard() {
