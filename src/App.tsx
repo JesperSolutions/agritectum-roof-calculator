@@ -1,22 +1,8 @@
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
-import { Download, Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro } from 'lucide-react';
-import jsPDF from 'jspdf';
+import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro } from 'lucide-react';
 
 const ROOF_TYPES = {
-  Bitumen: { 
-    co2: 0, 
-    nox: 0, 
-    energy: 0, 
-    lifespan: 25, 
-    maintenance: 'Inspect every 5–10 years.', 
-    color: '#6B7280',
-    materialCost: 0,
-    laborCost: 0,
-    totalCost: 0,
-    installationRate: 0,
-    description: 'Standard bitumen roofing (baseline)'
-  },
   "Photocat Coating": { 
     co2: 1.94, 
     nox: 0.1, 
@@ -27,7 +13,7 @@ const ROOF_TYPES = {
     materialCost: 3.00,
     laborCost: 0.12,
     totalCost: 3.12,
-    installationRate: 500, // m² per hour
+    installationRate: 500,
     description: 'Photocatalytic coating with NOₓ reduction properties'
   },
   "White Coating": { 
@@ -40,7 +26,7 @@ const ROOF_TYPES = {
     materialCost: 26.85,
     laborCost: 2.40,
     totalCost: 29.25,
-    installationRate: 25, // m² per hour
+    installationRate: 25,
     description: 'Generic white reflective coating'
   },
   "Triflex (SRI 97)": { 
@@ -53,7 +39,7 @@ const ROOF_TYPES = {
     materialCost: 46.98,
     laborCost: 8.57,
     totalCost: 55.55,
-    installationRate: 7, // m² per hour
+    installationRate: 7,
     description: 'High-performance Triflex coating with SRI 97'
   }
 };
@@ -63,20 +49,18 @@ export default function RoofImpactDashboard() {
   const [roofType, setRoofType] = useState<keyof typeof ROOF_TYPES>("Photocat Coating");
   const data = ROOF_TYPES[roofType];
 
-  // Using exact formulas from specifications
-  const initialCo2 = 3.33 * roofSize; // Initial CO₂ footprint of bitumen roof
+  const initialCo2 = 3.33 * roofSize;
   const co2PerYear = data.co2 * roofSize;
   const noxPerYear = data.nox * roofSize;
   const energyPerYear = data.energy * roofSize;
   const neutralYear = data.co2 > 0 ? Math.ceil(initialCo2 / co2PerYear) : null;
-  
-  // Cost calculations
+
   const totalInstallationCost = data.totalCost * roofSize;
   const installationTimeHours = data.installationRate > 0 ? roofSize / data.installationRate : 0;
-  const installationDays = data.installationRate > 0 ? Math.ceil(installationTimeHours / 8) : 0; // 8 hour work days
+  const installationDays = data.installationRate > 0 ? Math.ceil(installationTimeHours / 8) : 0;
 
-  // Generate chart data for CO₂ impact over 20-year evaluation period
-  const chartData = Array.from({ length: 21 }, (_, i) => {
+  // Calculate over 50 years instead of 20
+  const chartData = Array.from({ length: 51 }, (_, i) => {
     const year = i;
     const cumulativeCo2 = co2PerYear * year;
     const netCo2 = Math.max(0, initialCo2 - cumulativeCo2);
@@ -89,7 +73,6 @@ export default function RoofImpactDashboard() {
     };
   });
 
-  // Comparison data for different roof types
   const comparisonData = Object.entries(ROOF_TYPES).map(([name, typeData]) => ({
     name,
     co2Offset: typeData.co2 * roofSize,
@@ -98,118 +81,6 @@ export default function RoofImpactDashboard() {
     totalCost: typeData.totalCost * roofSize,
     color: typeData.color
   }));
-
-  const exportPDF = () => {
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-    // Header with gradient background effect
-    doc.setFillColor(245, 249, 245);
-    doc.rect(0, 0, 210, 297, 'F');
-    
-    // Title
-    doc.setFontSize(24);
-    doc.setTextColor(92, 147, 35);
-    doc.text('Agritectum CO₂ Roof Impact Report', 20, 25);
-    
-    // Subtitle
-    doc.setFontSize(12);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 20, 32);
-
-    // Main metrics box
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(15, 40, 180, 90, 4, 4, 'F');
-    doc.setDrawColor(92, 147, 35);
-    doc.setLineWidth(0.5);
-    doc.roundedRect(15, 40, 180, 90, 4, 4);
-
-    doc.setTextColor(51, 51, 51);
-    doc.setFontSize(14);
-    doc.text('Roof Specifications & Impact', 20, 50);
-    
-    doc.setFontSize(11);
-    doc.text(`Roof Type: ${roofType}`, 20, 60);
-    doc.text(`Roof Size: ${roofSize.toLocaleString()} m²`, 20, 67);
-    doc.text(`Initial CO₂ Footprint: ${initialCo2.toLocaleString()} kg CO₂e`, 20, 74);
-    doc.text(`CO₂ Offset per Year: ${co2PerYear.toLocaleString()} kg`, 20, 81);
-    doc.text(`20-Year CO₂ Offset: ${(co2PerYear * 20).toLocaleString()} kg`, 20, 88);
-    doc.text(`Carbon Neutral After: ${neutralYear ? `${neutralYear} years` : 'Never'}`, 20, 95);
-    
-    doc.text(`NOₓ Reduction per Year: ${noxPerYear.toLocaleString()} kg`, 110, 67);
-    doc.text(`Energy Savings per Year: ${energyPerYear.toLocaleString()} kWh`, 110, 74);
-    doc.text(`Expected Lifespan: ${data.lifespan} years`, 110, 81);
-    doc.text(`Annual Energy Cost Savings: €${(energyPerYear * 0.25).toLocaleString()}`, 110, 88);
-    doc.text(`Installation Time: ${installationDays} days`, 110, 95);
-
-    // Cost Analysis Section
-    doc.setFillColor(248, 250, 252);
-    doc.roundedRect(15, 140, 180, 50, 4, 4, 'F');
-    doc.setDrawColor(59, 130, 246);
-    doc.roundedRect(15, 140, 180, 50, 4, 4);
-
-    doc.setFontSize(14);
-    doc.setTextColor(30, 64, 175);
-    doc.text('Installation Cost Analysis', 20, 152);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(51, 51, 51);
-    doc.text(`Total Installation Cost: €${totalInstallationCost.toLocaleString()}`, 20, 162);
-    doc.text(`Cost per m²: €${data.totalCost.toFixed(2)}`, 20, 169);
-    doc.text(`Installation Time: ${installationTimeHours.toFixed(1)} hours (${installationDays} days)`, 20, 176);
-    doc.text(`Installation Rate: ${data.installationRate} m²/hour`, 110, 162);
-    doc.text(`Material Cost: €${data.materialCost.toFixed(2)}/m²`, 110, 169);
-    doc.text(`Labor Cost: €${data.laborCost.toFixed(2)}/m²`, 110, 176);
-
-    // Environmental benefits
-    doc.setFillColor(240, 253, 240);
-    doc.roundedRect(15, 200, 180, 50, 4, 4, 'F');
-    doc.setDrawColor(92, 147, 35);
-    doc.roundedRect(15, 200, 180, 50, 4, 4);
-
-    doc.setFontSize(14);
-    doc.setTextColor(26, 60, 64);
-    doc.text('Environmental & Economic Benefits', 20, 212);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(51, 51, 51);
-    doc.text('✓ Reduced climate impact and CO₂ footprint', 20, 222);
-    doc.text('✓ Cleaner urban air through NOₓ reduction', 20, 229);
-    doc.text('✓ Lower energy bills from cooling efficiency', 20, 236);
-    doc.text('✓ Compliant with green building standards', 20, 243);
-    doc.text('✓ Enhanced property value and ESG rating', 110, 222);
-    doc.text('✓ Long-term cost savings and ROI', 110, 229);
-    doc.text('✓ Improved building sustainability rating', 110, 236);
-
-    // Maintenance information with proper text wrapping
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(15, 260, 180, 25, 4, 4, 'F');
-    doc.setDrawColor(100, 100, 100);
-    doc.roundedRect(15, 260, 180, 25, 4, 4);
-
-    doc.setFontSize(12);
-    doc.setTextColor(26, 60, 64);
-    doc.text('Maintenance Requirements', 20, 270);
-    doc.setFontSize(9);
-    doc.setTextColor(51, 51, 51);
-    
-    // Properly wrap maintenance text
-    const maintenanceLines = doc.splitTextToSize(data.maintenance, 160);
-    let yPosition = 278;
-    maintenanceLines.forEach((line: string) => {
-      if (yPosition < 285) { // Ensure we don't go off the page
-        doc.text(line, 20, yPosition);
-        yPosition += 4;
-      }
-    });
-
-    // Footer
-    doc.setFontSize(10);
-    doc.setTextColor(92, 147, 35);
-    doc.text('Agritectum - Sustainable Building Solutions', 20, 290);
-    doc.text('Contact: info@agritectum.com | +45 88 77 66 55', 20, 295);
-
-    doc.save(`Agritectum_Roof_Report_${roofType.replace(/\s+/g, '_')}_${roofSize}m2.pdf`);
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
@@ -235,14 +106,14 @@ export default function RoofImpactDashboard() {
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
           <div className="flex items-center space-x-3 mb-6">
             <Calculator className="w-6 h-6 text-green-600" />
-            <h2 className="text-xl font-semibold text-gray-900">Roof Configuration</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Roof for good</h2>
           </div>
           
           <div className="grid md:grid-cols-2 gap-8">
             {/* Roof Size Input */}
             <div className="space-y-3">
               <label className="block text-sm font-medium text-gray-700">
-                Roof Size (m²)
+                Estimated size of roof (m²)
               </label>
               <div className="relative">
                 <input
@@ -395,7 +266,7 @@ export default function RoofImpactDashboard() {
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
             <div className="flex items-center space-x-3 mb-6">
               <TrendingUp className="w-6 h-6 text-green-600" />
-              <h3 className="text-xl font-semibold text-gray-900">CO₂ Impact Over 20 Years</h3>
+              <h3 className="text-xl font-semibold text-gray-900">CO₂ Impact Over 50 Years</h3>
             </div>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
