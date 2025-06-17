@@ -3,7 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro } from 'lucide-react';
 
 const ROOF_TYPES = {
-  "Photocat Coating": { 
+  "Photocatalytic Coating": { 
     co2: 1.94, 
     nox: 0.1, 
     energy: 3.5, 
@@ -16,20 +16,7 @@ const ROOF_TYPES = {
     installationRate: 500,
     description: 'Photocatalytic coating with NOₓ reduction properties'
   },
-  "White Coating": { 
-    co2: 4.5, 
-    nox: 0.017, 
-    energy: 6, 
-    lifespan: 15, 
-    maintenance: 'Clean every 2–3 years, recoat every 10–15 years.', 
-    color: '#3B82F6',
-    materialCost: 26.85,
-    laborCost: 2.40,
-    totalCost: 29.25,
-    installationRate: 25,
-    description: 'Generic white reflective coating'
-  },
-  "Triflex (SRI 97)": { 
+  "White - Cool Roof Coating": { 
     co2: 6.65, 
     nox: 0.02, 
     energy: 8.5, 
@@ -62,7 +49,7 @@ export default function RoofImpactDashboard() {
   const [roofType, setRoofType] = useState<keyof typeof ROOF_TYPES>("Photocat Coating");
   const data = ROOF_TYPES[roofType];
 
-  const initialCo2 = 3.33 * roofSize;
+  const initialCo2 = 19 * roofSize;
   const co2PerYear = data.co2 * roofSize;
   const noxPerYear = data.nox * roofSize;
   const energyPerYear = data.energy * roofSize;
