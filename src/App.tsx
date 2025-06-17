@@ -89,9 +89,13 @@ export default function RoofImpactDashboard() {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-                <Leaf className="w-6 h-6 text-white" />
-              </div>
+              <div className="w-10 h-10">
+                  <img
+                    src="/logo.webp"
+                    alt="Agritectum logo"
+                    className="w-full h-full object-contain rounded-xl"
+                  />
+                </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Agritectum</h1>
                 <p className="text-sm text-gray-600">Roof CO₂ Impact Calculator</p>
