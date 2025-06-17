@@ -97,8 +97,6 @@ export default function RoofImpactDashboard() {
                   />
                 </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Agritectum</h1>
-                <p className="text-sm text-gray-600">Roof CO₂ Impact Calculator</p>
               </div>
             </div>
           </div>
@@ -110,7 +108,7 @@ export default function RoofImpactDashboard() {
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
           <div className="flex items-center space-x-3 mb-6">
             <Calculator className="w-6 h-6 text-green-600" />
-            <h2 className="text-xl font-semibold text-gray-900">Roof for good</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Roof For Good CO2, Impact Calculator.</h2>
           </div>
           
           <div className="grid md:grid-cols-2 gap-8">
