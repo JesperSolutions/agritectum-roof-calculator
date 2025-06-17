@@ -369,16 +369,16 @@ export default function RoofImpactDashboard() {
                     <span className="font-semibold text-red-700">{initialCo2.toLocaleString()} kg</span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                    <span className="text-gray-700">20-Year CO₂ Offset</span>
-                    <span className="font-semibold text-green-700">{(co2PerYear * 20).toLocaleString()} kg</span>
+                    <span className="text-gray-700">50-Year CO₂ Offset</span>
+                    <span className="font-semibold text-green-700">{(co2PerYear * 50).toLocaleString()} kg</span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                    <span className="text-gray-700">20-Year Energy Savings</span>
-                    <span className="font-semibold text-blue-700">{(energyPerYear * 20).toLocaleString()} kWh</span>
+                    <span className="text-gray-700">50-Year Energy Savings</span>
+                    <span className="font-semibold text-blue-700">{(energyPerYear * 50).toLocaleString()} kWh</span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                    <span className="text-gray-700">20-Year NOₓ Reduction</span>
-                    <span className="font-semibold text-purple-700">{(noxPerYear * 20).toLocaleString()} kg</span>
+                    <span className="text-gray-700">50-Year NOₓ Reduction</span>
+                    <span className="font-semibold text-purple-700">{(noxPerYear * 50).toLocaleString()} kg</span>
                   </div>
                 </div>
               </div>
