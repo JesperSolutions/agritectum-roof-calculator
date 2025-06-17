@@ -41,7 +41,7 @@ const ROOF_TYPES = {
     totalCost: 55.55,
     installationRate: 7,
     description: 'High-performance Triflex coating with SRI 97'
-  }
+  },
   "Green Roof": {
   co2: 2.1, // annual CO₂ sequestration per m² in kg
   nox: 0.05, // estimated air purification
@@ -55,7 +55,6 @@ const ROOF_TYPES = {
   installationRate: 12,
   description: 'Extensive green roof system with sedum or grass'
 }
-
 };
 
 export default function RoofImpactDashboard() {
