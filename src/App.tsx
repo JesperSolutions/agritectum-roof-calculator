@@ -89,7 +89,7 @@ export default function RoofImpactDashboard() {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10">
+              <div className="w-14 h-14">
                   <img
                     src="/logo.webp"
                     alt="Agritectum logo"
