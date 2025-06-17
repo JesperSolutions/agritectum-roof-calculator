@@ -46,7 +46,7 @@ const ROOF_TYPES = {
 
 export default function RoofImpactDashboard() {
   const [roofSize, setRoofSize] = useState(1000);
-  const [roofType, setRoofType] = useState<keyof typeof ROOF_TYPES>("Photocat Coating");
+  const [roofType, setRoofType] = useState<keyof typeof ROOF_TYPES>("Photocatalytic Coating");
   const data = ROOF_TYPES[roofType];
 
   const initialCo2 = 19 * roofSize;
