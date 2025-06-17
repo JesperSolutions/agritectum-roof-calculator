@@ -49,7 +49,7 @@ export default function RoofImpactDashboard() {
   const [roofType, setRoofType] = useState<keyof typeof ROOF_TYPES>("Photocat Coating");
   const data = ROOF_TYPES[roofType];
 
-  const initialCo2 = 19.00 * roofSize;
+  const initialCo2 = 3.33 * roofSize;
   const co2PerYear = data.co2 * roofSize;
   const noxPerYear = data.nox * roofSize;
   const energyPerYear = data.energy * roofSize;
