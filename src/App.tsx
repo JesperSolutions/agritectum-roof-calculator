@@ -91,31 +91,31 @@ export default function RoofImpactDashboard() {
   const installationDays = Math.ceil(totalInstallationHours / 8);
 
   // If we want to factor panel degradation into the 50-year chart:
-  const chartData = Array.from({ length: 51 }, (_, i) => {
-    const year = i;
-    // Calculate solar generation for this year considering degradation
+  const chartData = [];
+  let cumulativeCo2 = 0;
+
+  for (let year = 0; year <= 50; year++) {
     let solarGenThisYear = 0;
-    if (includeSolar) {
-      if (year <= SOLAR_SPECS.lifespan) {
-        // degrade output by 0.5% each year after the first
-        solarGenThisYear = solarEnergyPerYear * Math.pow(1 - SOLAR_SPECS.degradationRate, year);
-      } else {
-        solarGenThisYear = 0; // panels past lifespan (no generation unless replaced)
-      }
+    if (includeSolar && year <= SOLAR_SPECS.lifespan) {
+      solarGenThisYear = solarEnergyPerYear * Math.pow(1 - SOLAR_SPECS.degradationRate, year);
     }
+
     const energyThisYear = energyPerYear + solarGenThisYear;
     const co2OffsetThisYear = co2PerYear + (solarGenThisYear * SOLAR_SPECS.co2PerKwh);
-    const cumulativeCo2 = year === 0 ? 0 : chartData[year - 1]?.cumulativeOffset + co2OffsetThisYear;
+
+    cumulativeCo2 += co2OffsetThisYear;
     const netCo2 = Math.max(0, initialCo2 - cumulativeCo2);
-    return {
+
+    chartData.push({
       year,
       cumulativeOffset: cumulativeCo2,
-      netCo2: netCo2,
+      netCo2,
       energySavings: energyThisYear,
       noxReduction: noxPerYear,
       solarGeneration: solarGenThisYear
-    };
-  });
+    });
+  }
+
 
   const comparisonData = Object.entries(ROOF_TYPES).map(([name, typeData]) => ({
     name,
