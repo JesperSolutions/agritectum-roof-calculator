@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
-import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro } from 'lucide-react';
+import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun } from 'lucide-react';
 
 const ROOF_TYPES = {
   "Photocatalytic Coating": { 
     co2: 1.94, 
     nox: 0.1, 
-    energy: 3.5, 
+    energy: 0, // Removed default energy savings
     lifespan: 15, 
     maintenance: 'Reapply every 2 years to maintain NOₓ effect.', 
     color: '#5C9323',
@@ -19,7 +19,7 @@ const ROOF_TYPES = {
   "White - Cool Roof Coating": { 
     co2: 6.65, 
     nox: 0.02, 
-    energy: 8.5, 
+    energy: 8.5, // Keep energy savings for cool roof (cooling benefits)
     lifespan: 20, 
     maintenance: 'Clean every 2 years, recoat every 15–20 years.', 
     color: '#8B5CF6',
@@ -30,55 +30,80 @@ const ROOF_TYPES = {
     description: 'High-performance Triflex coating with SRI 97'
   },
   "Green Roof": {
-  co2: 2.1, // annual CO₂ sequestration per m² in kg
-  nox: 0.05, // estimated air purification
-  energy: 1.5, // energy savings from insulation
-  lifespan: 40,
-  maintenance: 'Trim plants yearly, check drainage twice annually.',
-  color: '#34D399', // Tailwind green-400
-  materialCost: 38.50,
-  laborCost: 6.50,
-  totalCost: 45.00,
-  installationRate: 12,
-  description: 'Extensive green roof system with sedum or grass'
-}
+    co2: 2.1,
+    nox: 0.05,
+    energy: 1.5, // Keep energy savings for green roof (insulation benefits)
+    lifespan: 40,
+    maintenance: 'Trim plants yearly, check drainage twice annually.',
+    color: '#34D399',
+    materialCost: 38.50,
+    laborCost: 6.50,
+    totalCost: 45.00,
+    installationRate: 12,
+    description: 'Extensive green roof system with sedum or grass'
+  }
+};
+
+// Solar panel specifications
+const SOLAR_SPECS = {
+  powerPerM2: 200, // Watts per m² (typical for modern panels)
+  hoursPerDay: 4.5, // Average sun hours per day in Europe
+  daysPerYear: 365,
+  co2PerKwh: 0.4, // kg CO₂ avoided per kWh generated
+  costPerM2: 150, // €150 per m² for solar installation
+  maintenanceCost: 2, // €2 per m² per year
+  lifespan: 25 // years
 };
 
 export default function RoofImpactDashboard() {
   const [roofSize, setRoofSize] = useState(1000);
   const [roofType, setRoofType] = useState<keyof typeof ROOF_TYPES>("Photocatalytic Coating");
+  const [includeSolar, setIncludeSolar] = useState(false);
   const data = ROOF_TYPES[roofType];
 
   const initialCo2 = 19 * roofSize;
   const co2PerYear = data.co2 * roofSize;
   const noxPerYear = data.nox * roofSize;
   const energyPerYear = data.energy * roofSize;
-  const neutralYear = data.co2 > 0 ? Math.ceil(initialCo2 / co2PerYear) : null;
 
-  const totalInstallationCost = data.totalCost * roofSize;
+  // Solar calculations
+  const solarEnergyPerYear = includeSolar ? 
+    (SOLAR_SPECS.powerPerM2 * roofSize * SOLAR_SPECS.hoursPerDay * SOLAR_SPECS.daysPerYear) / 1000 : 0; // Convert to kWh
+  const solarCo2PerYear = includeSolar ? solarEnergyPerYear * SOLAR_SPECS.co2PerKwh : 0;
+  const solarCost = includeSolar ? SOLAR_SPECS.costPerM2 * roofSize : 0;
+
+  // Combined totals
+  const totalEnergyPerYear = energyPerYear + solarEnergyPerYear;
+  const totalCo2PerYear = co2PerYear + solarCo2PerYear;
+  const neutralYear = totalCo2PerYear > 0 ? Math.ceil(initialCo2 / totalCo2PerYear) : null;
+
+  const totalInstallationCost = (data.totalCost * roofSize) + solarCost;
   const installationTimeHours = data.installationRate > 0 ? roofSize / data.installationRate : 0;
-  const installationDays = data.installationRate > 0 ? Math.ceil(installationTimeHours / 8) : 0;
+  const solarInstallationHours = includeSolar ? roofSize / 20 : 0; // 20 m²/hour for solar
+  const totalInstallationHours = installationTimeHours + solarInstallationHours;
+  const installationDays = Math.ceil(totalInstallationHours / 8);
 
-  // Calculate over 50 years instead of 20
+  // Calculate over 50 years
   const chartData = Array.from({ length: 51 }, (_, i) => {
     const year = i;
-    const cumulativeCo2 = co2PerYear * year;
+    const cumulativeCo2 = totalCo2PerYear * year;
     const netCo2 = Math.max(0, initialCo2 - cumulativeCo2);
     return {
       year,
       cumulativeOffset: cumulativeCo2,
       netCo2: netCo2,
-      energySavings: energyPerYear * year,
-      noxReduction: noxPerYear * year
+      energySavings: totalEnergyPerYear * year,
+      noxReduction: noxPerYear * year,
+      solarGeneration: solarEnergyPerYear * year
     };
   });
 
   const comparisonData = Object.entries(ROOF_TYPES).map(([name, typeData]) => ({
     name,
-    co2Offset: typeData.co2 * roofSize,
-    energySavings: typeData.energy * roofSize,
+    co2Offset: typeData.co2 * roofSize + (includeSolar ? solarCo2PerYear : 0),
+    energySavings: typeData.energy * roofSize + (includeSolar ? solarEnergyPerYear : 0),
     noxReduction: typeData.nox * roofSize,
-    totalCost: typeData.totalCost * roofSize,
+    totalCost: typeData.totalCost * roofSize + (includeSolar ? solarCost : 0),
     color: typeData.color
   }));
 
@@ -89,14 +114,12 @@ export default function RoofImpactDashboard() {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="20 h-12">
-                  <img
-                    src="/logo.webp"
-                    alt="Agritectum logo"
-                    className="w-full h-full object-contain rounded-xl"
-                  />
-                </div>
-              <div>
+              <div className="w-20 h-12">
+                <img
+                  src="/logo.webp"
+                  alt="Agritectum logo"
+                  className="w-full h-full object-contain rounded-xl"
+                />
               </div>
             </div>
           </div>
@@ -188,6 +211,37 @@ export default function RoofImpactDashboard() {
               </div>
             </div>
           </div>
+
+          {/* Solar Panel Option */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="flex items-center justify-between p-6 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-xl">
+                  <Sun className="w-6 h-6 text-yellow-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Add Solar Panels</h3>
+                  <p className="text-sm text-gray-600">
+                    Generate clean energy and increase CO₂ offset (+€{SOLAR_SPECS.costPerM2}/m²)
+                  </p>
+                  {includeSolar && (
+                    <div className="mt-2 text-sm text-yellow-700 font-medium">
+                      Expected generation: {solarEnergyPerYear.toLocaleString()} kWh/year
+                    </div>
+                  )}
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeSolar}
+                  onChange={(e) => setIncludeSolar(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-14 h-8 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-yellow-500"></div>
+              </label>
+            </div>
+          </div>
         </div>
 
         {/* Key Metrics Cards */}
@@ -196,12 +250,17 @@ export default function RoofImpactDashboard() {
             <div className="flex items-center justify-between mb-4">
               <Leaf className="w-8 h-8 opacity-80" />
               <div className="text-right">
-                <div className="text-2xl font-bold">{co2PerYear.toLocaleString()}</div>
+                <div className="text-2xl font-bold">{totalCo2PerYear.toLocaleString()}</div>
                 <div className="text-green-100 text-sm">kg CO₂/year</div>
               </div>
             </div>
             <div className="text-green-100 text-sm">
               Carbon Offset Annual
+              {includeSolar && (
+                <div className="text-xs mt-1 opacity-80">
+                  (incl. {solarCo2PerYear.toLocaleString()} kg from solar)
+                </div>
+              )}
             </div>
           </div>
 
@@ -209,12 +268,17 @@ export default function RoofImpactDashboard() {
             <div className="flex items-center justify-between mb-4">
               <Zap className="w-8 h-8 opacity-80" />
               <div className="text-right">
-                <div className="text-2xl font-bold">{energyPerYear.toLocaleString()}</div>
+                <div className="text-2xl font-bold">{totalEnergyPerYear.toLocaleString()}</div>
                 <div className="text-blue-100 text-sm">kWh/year</div>
               </div>
             </div>
             <div className="text-blue-100 text-sm">
-              Energy Savings
+              {includeSolar ? 'Energy Generated + Saved' : 'Energy Savings'}
+              {includeSolar && (
+                <div className="text-xs mt-1 opacity-80">
+                  ({solarEnergyPerYear.toLocaleString()} kWh solar generation)
+                </div>
+              )}
             </div>
           </div>
 
@@ -251,13 +315,18 @@ export default function RoofImpactDashboard() {
               <Euro className="w-8 h-8 opacity-80" />
               <div className="text-right">
                 <div className="text-2xl font-bold">
-                  {totalInstallationCost > 0 ? `€${totalInstallationCost.toLocaleString()}` : '€0'}
+                  €{totalInstallationCost.toLocaleString()}
                 </div>
                 <div className="text-emerald-100 text-sm">total cost</div>
               </div>
             </div>
             <div className="text-emerald-100 text-sm">
               Installation Investment
+              {includeSolar && (
+                <div className="text-xs mt-1 opacity-80">
+                  (incl. €{solarCost.toLocaleString()} solar)
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -372,16 +441,22 @@ export default function RoofImpactDashboard() {
                   </div>
                   <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                     <span className="text-gray-700">50-Year CO₂ Offset</span>
-                    <span className="font-semibold text-green-700">{(co2PerYear * 50).toLocaleString()} kg</span>
+                    <span className="font-semibold text-green-700">{(totalCo2PerYear * 50).toLocaleString()} kg</span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                    <span className="text-gray-700">50-Year Energy Savings</span>
-                    <span className="font-semibold text-blue-700">{(energyPerYear * 50).toLocaleString()} kWh</span>
+                    <span className="text-gray-700">50-Year Energy Impact</span>
+                    <span className="font-semibold text-blue-700">{(totalEnergyPerYear * 50).toLocaleString()} kWh</span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                     <span className="text-gray-700">50-Year NOₓ Reduction</span>
                     <span className="font-semibold text-purple-700">{(noxPerYear * 50).toLocaleString()} kg</span>
                   </div>
+                  {includeSolar && (
+                    <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                      <span className="text-gray-700">50-Year Solar Generation</span>
+                      <span className="font-semibold text-yellow-700">{(solarEnergyPerYear * 50).toLocaleString()} kWh</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -391,12 +466,18 @@ export default function RoofImpactDashboard() {
                 <h4 className="font-semibold text-gray-900 mb-3">Cost Analysis</h4>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-emerald-50 rounded-lg">
-                    <span className="text-gray-700">Total Installation Cost</span>
-                    <span className="font-semibold text-emerald-700">€{totalInstallationCost.toLocaleString()}</span>
+                    <span className="text-gray-700">Roof Installation Cost</span>
+                    <span className="font-semibold text-emerald-700">€{(data.totalCost * roofSize).toLocaleString()}</span>
                   </div>
+                  {includeSolar && (
+                    <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                      <span className="text-gray-700">Solar Installation Cost</span>
+                      <span className="font-semibold text-yellow-700">€{solarCost.toLocaleString()}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                    <span className="text-gray-700">Cost per m²</span>
-                    <span className="font-semibold text-blue-700">€{data.totalCost.toFixed(2)}</span>
+                    <span className="text-gray-700">Total Investment</span>
+                    <span className="font-semibold text-blue-700">€{totalInstallationCost.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
                     <span className="text-gray-700">Installation Time</span>
@@ -405,8 +486,8 @@ export default function RoofImpactDashboard() {
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                    <span className="text-gray-700">Annual Energy Savings</span>
-                    <span className="font-semibold text-green-700">€{(energyPerYear * 0.25).toLocaleString()}</span>
+                    <span className="text-gray-700">Annual Energy Value</span>
+                    <span className="font-semibold text-green-700">€{(totalEnergyPerYear * 0.25).toLocaleString()}</span>
                   </div>
                 </div>
               </div>
@@ -417,7 +498,7 @@ export default function RoofImpactDashboard() {
                 <h4 className="font-semibold text-gray-900 mb-3">Technical Specifications</h4>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-gray-700">Expected Lifespan</span>
+                    <span className="text-gray-700">Roof System Lifespan</span>
                     <span className="font-semibold text-gray-700">{data.lifespan} years</span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
@@ -428,6 +509,18 @@ export default function RoofImpactDashboard() {
                     <span className="text-gray-700">Energy Efficiency</span>
                     <span className="font-semibold text-gray-700">{data.energy} kWh/m²/year</span>
                   </div>
+                  {includeSolar && (
+                    <>
+                      <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                        <span className="text-gray-700">Solar Power Density</span>
+                        <span className="font-semibold text-yellow-700">{SOLAR_SPECS.powerPerM2} W/m²</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                        <span className="text-gray-700">Solar Lifespan</span>
+                        <span className="font-semibold text-yellow-700">{SOLAR_SPECS.lifespan} years</span>
+                      </div>
+                    </>
+                  )}
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-700">Installation Rate</span>
                     <span className="font-semibold text-gray-700">
@@ -441,8 +534,18 @@ export default function RoofImpactDashboard() {
 
           <div className="mt-8">
             <h4 className="font-semibold text-gray-900 mb-3">Maintenance Requirements</h4>
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-gray-700 text-sm leading-relaxed">{data.maintenance}</p>
+            <div className="space-y-3">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <p className="text-gray-700 text-sm leading-relaxed"><strong>Roof System:</strong> {data.maintenance}</p>
+              </div>
+              {includeSolar && (
+                <div className="p-4 bg-yellow-50 rounded-lg">
+                  <p className="text-gray-700 text-sm leading-relaxed">
+                    <strong>Solar Panels:</strong> Clean panels twice yearly, inspect electrical connections annually. 
+                    Expected maintenance cost: €{(SOLAR_SPECS.maintenanceCost * roofSize).toLocaleString()}/year.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
