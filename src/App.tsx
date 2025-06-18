@@ -44,14 +44,16 @@ const ROOF_TYPES = {
   }
 };
 
-// Solar panel specifications
+// Add realistic performance and degradation factors to SOLAR_SPECS
 const SOLAR_SPECS = {
-  powerPerM2: 200, // Watts per m² (typical for modern panels)
-  hoursPerDay: 4.5, // Average sun hours per day in Europe
+  powerPerM2: 200,           // Watts per m² (monocrystalline panel at STC)
+  hoursPerDay: 4.5,          // Avg peak sun hours per day (base value)
   daysPerYear: 365,
-  co2PerKwh: 0.4, // kg CO₂ avoided per kWh generated
-  costPerM2: 150, // €150 per m² for solar installation
-  maintenanceCost: 2, // €2 per m² per year
+  performanceFactor: 0.75,   // Derating for losses (orientation, weather, etc.)
+  degradationRate: 0.005,    // 0.5% output loss per year (monocrystalline panels)
+  co2PerKwh: 0.4,
+  costPerM2: 150,
+  maintenanceCost: 2,
   lifespan: 25 // years
 };
 
@@ -66,15 +68,20 @@ export default function RoofImpactDashboard() {
   const noxPerYear = data.nox * roofSize;
   const energyPerYear = data.energy * roofSize;
 
-  // Solar calculations
-  const solarEnergyPerYear = includeSolar ? 
-    (SOLAR_SPECS.powerPerM2 * roofSize * SOLAR_SPECS.hoursPerDay * SOLAR_SPECS.daysPerYear) / 1000 : 0; // Convert to kWh
+  // Calculate annual solar generation (kWh/year) with performance factor
+  const solarEnergyPerYear = includeSolar 
+    ? (SOLAR_SPECS.powerPerM2 * roofSize * SOLAR_SPECS.hoursPerDay 
+        * SOLAR_SPECS.daysPerYear * SOLAR_SPECS.performanceFactor) / 1000 
+    : 0;  // kWh/year (includes derating for real conditions)
+
   const solarCo2PerYear = includeSolar ? solarEnergyPerYear * SOLAR_SPECS.co2PerKwh : 0;
   const solarCost = includeSolar ? SOLAR_SPECS.costPerM2 * roofSize : 0;
 
   // Combined totals
   const totalEnergyPerYear = energyPerYear + solarEnergyPerYear;
   const totalCo2PerYear = co2PerYear + solarCo2PerYear;
+
+  // Recalculate neutralYear with updated totalCo2PerYear
   const neutralYear = totalCo2PerYear > 0 ? Math.ceil(initialCo2 / totalCo2PerYear) : null;
 
   const totalInstallationCost = (data.totalCost * roofSize) + solarCost;
@@ -83,18 +90,30 @@ export default function RoofImpactDashboard() {
   const totalInstallationHours = installationTimeHours + solarInstallationHours;
   const installationDays = Math.ceil(totalInstallationHours / 8);
 
-  // Calculate over 50 years
+  // If we want to factor panel degradation into the 50-year chart:
   const chartData = Array.from({ length: 51 }, (_, i) => {
     const year = i;
-    const cumulativeCo2 = totalCo2PerYear * year;
+    // Calculate solar generation for this year considering degradation
+    let solarGenThisYear = 0;
+    if (includeSolar) {
+      if (year <= SOLAR_SPECS.lifespan) {
+        // degrade output by 0.5% each year after the first
+        solarGenThisYear = solarEnergyPerYear * Math.pow(1 - SOLAR_SPECS.degradationRate, year);
+      } else {
+        solarGenThisYear = 0; // panels past lifespan (no generation unless replaced)
+      }
+    }
+    const energyThisYear = energyPerYear + solarGenThisYear;
+    const co2OffsetThisYear = co2PerYear + (solarGenThisYear * SOLAR_SPECS.co2PerKwh);
+    const cumulativeCo2 = year === 0 ? 0 : chartData[year - 1]?.cumulativeOffset + co2OffsetThisYear;
     const netCo2 = Math.max(0, initialCo2 - cumulativeCo2);
     return {
       year,
       cumulativeOffset: cumulativeCo2,
       netCo2: netCo2,
-      energySavings: totalEnergyPerYear * year,
-      noxReduction: noxPerYear * year,
-      solarGeneration: solarEnergyPerYear * year
+      energySavings: energyThisYear,
+      noxReduction: noxPerYear,
+      solarGeneration: solarGenThisYear
     };
   });
 
@@ -224,9 +243,12 @@ export default function RoofImpactDashboard() {
                   <p className="text-sm text-gray-600">
                     Generate clean energy and increase CO₂ offset (+€{SOLAR_SPECS.costPerM2}/m²)
                   </p>
+                  <div className="mt-1 text-xs text-gray-500">
+                    Performance factor: {(SOLAR_SPECS.performanceFactor * 100)}% • Degradation: {(SOLAR_SPECS.degradationRate * 100)}%/year
+                  </div>
                   {includeSolar && (
                     <div className="mt-2 text-sm text-yellow-700 font-medium">
-                      Expected generation: {solarEnergyPerYear.toLocaleString()} kWh/year
+                      Expected generation: {solarEnergyPerYear.toLocaleString()} kWh/year (Year 1)
                     </div>
                   )}
                 </div>
@@ -338,6 +360,11 @@ export default function RoofImpactDashboard() {
             <div className="flex items-center space-x-3 mb-6">
               <TrendingUp className="w-6 h-6 text-green-600" />
               <h3 className="text-xl font-semibold text-gray-900">CO₂ Impact Over 50 Years</h3>
+              {includeSolar && (
+                <div className="text-xs text-gray-500 bg-yellow-50 px-2 py-1 rounded">
+                  Includes solar degradation
+                </div>
+              )}
             </div>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
@@ -375,6 +402,17 @@ export default function RoofImpactDashboard() {
                     name="Remaining CO₂ Debt"
                     dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
                   />
+                  {includeSolar && (
+                    <Line 
+                      type="monotone" 
+                      dataKey="solarGeneration" 
+                      stroke="#f59e0b" 
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      name="Annual Solar Generation"
+                      dot={{ fill: '#f59e0b', strokeWidth: 2, r: 3 }}
+                    />
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -454,7 +492,7 @@ export default function RoofImpactDashboard() {
                   {includeSolar && (
                     <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
                       <span className="text-gray-700">50-Year Solar Generation</span>
-                      <span className="font-semibold text-yellow-700">{(solarEnergyPerYear * 50).toLocaleString()} kWh</span>
+                      <span className="font-semibold text-yellow-700">{(solarEnergyPerYear * 25).toLocaleString()} kWh</span>
                     </div>
                   )}
                 </div>
@@ -516,6 +554,10 @@ export default function RoofImpactDashboard() {
                         <span className="font-semibold text-yellow-700">{SOLAR_SPECS.powerPerM2} W/m²</span>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                        <span className="text-gray-700">Solar Performance Factor</span>
+                        <span className="font-semibold text-yellow-700">{(SOLAR_SPECS.performanceFactor * 100)}%</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
                         <span className="text-gray-700">Solar Lifespan</span>
                         <span className="font-semibold text-yellow-700">{SOLAR_SPECS.lifespan} years</span>
                       </div>
@@ -543,6 +585,7 @@ export default function RoofImpactDashboard() {
                   <p className="text-gray-700 text-sm leading-relaxed">
                     <strong>Solar Panels:</strong> Clean panels twice yearly, inspect electrical connections annually. 
                     Expected maintenance cost: €{(SOLAR_SPECS.maintenanceCost * roofSize).toLocaleString()}/year.
+                    Performance degrades by {(SOLAR_SPECS.degradationRate * 100)}% annually.
                   </p>
                 </div>
               )}
