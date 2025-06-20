@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
-import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun } from 'lucide-react';
+import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun, FileText } from 'lucide-react';
+import LeadCaptureModal from './components/LeadCaptureModal';
 
 const ROOF_TYPES = {
   "Photocatalytic Coating": { 
@@ -61,6 +62,7 @@ export default function RoofImpactDashboard() {
   const [roofSize, setRoofSize] = useState(1000);
   const [roofType, setRoofType] = useState<keyof typeof ROOF_TYPES>("Photocatalytic Coating");
   const [includeSolar, setIncludeSolar] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const data = ROOF_TYPES[roofType];
 
   const initialCo2 = 19 * roofSize;
@@ -116,7 +118,6 @@ export default function RoofImpactDashboard() {
     });
   }
 
-
   const comparisonData = Object.entries(ROOF_TYPES).map(([name, typeData]) => ({
     name,
     co2Offset: typeData.co2 * roofSize + (includeSolar ? solarCo2PerYear : 0),
@@ -125,6 +126,19 @@ export default function RoofImpactDashboard() {
     totalCost: typeData.totalCost * roofSize + (includeSolar ? solarCost : 0),
     color: typeData.color
   }));
+
+  // Calculator data for the modal
+  const calculatorData = {
+    roofSize,
+    roofType,
+    includeSolar,
+    totalCo2PerYear,
+    totalEnergyPerYear,
+    noxPerYear,
+    neutralYear,
+    totalInstallationCost,
+    solarEnergyPerYear
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
@@ -464,6 +478,28 @@ export default function RoofImpactDashboard() {
           </div>
         </div>
 
+        {/* CTA Section */}
+        <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl shadow-xl p-8 text-white">
+          <div className="text-center max-w-3xl mx-auto">
+            <FileText className="w-12 h-12 mx-auto mb-4 opacity-90" />
+            <h2 className="text-3xl font-bold mb-4">
+              Ready to Transform Your Roof?
+            </h2>
+            <p className="text-xl text-green-100 mb-8">
+              Get a personalized assessment and detailed report based on your specific building and requirements.
+            </p>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-white text-green-700 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-green-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+            >
+              Get Your Personal Roof Assessment
+            </button>
+            <p className="text-sm text-green-200 mt-4">
+              Free consultation • No commitment • Expert guidance
+            </p>
+          </div>
+        </div>
+
         {/* Detailed Information */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
           <h3 className="text-xl font-semibold text-gray-900 mb-6">Comprehensive Analysis</h3>
@@ -603,6 +639,13 @@ export default function RoofImpactDashboard() {
           </p>
         </div>
       </div>
+
+      {/* Lead Capture Modal */}
+      <LeadCaptureModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        calculatorData={calculatorData}
+      />
     </div>
   );
 }
