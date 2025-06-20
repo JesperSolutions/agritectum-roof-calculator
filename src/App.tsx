@@ -633,7 +633,7 @@ export default function RoofImpactDashboard() {
         <div className="text-center py-8">
           <p className="text-gray-600 text-sm">
             © 2025 Agritectum - Sustainable Building Solutions | 
-            <a href="mailto:info@agritectum.com" className="text-green-600 hover:text-green-700 ml-1">
+            <a href="mailto:jesper.aggerholm@agritectum.com" className="text-green-600 hover:text-green-700 ml-1">
               info@agritectum.com
             </a>
           </p>
