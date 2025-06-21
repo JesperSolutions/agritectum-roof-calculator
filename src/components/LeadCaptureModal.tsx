@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { X, Send, CheckCircle } from 'lucide-react';
+import emailjs from '@emailjs/browser';
 
 interface LeadCaptureModalProps {
   isOpen: boolean;
   onClose: () => void;
   calculatorData: {
     roofSize: number;
+    roofSizeDisplay: number;
+    unit: string;
     roofType: string;
     includeSolar: boolean;
     totalCo2PerYear: number;
@@ -27,6 +30,7 @@ interface FormData {
   roofType: string;
   roofAge: string;
   roofArea: number;
+  roofAreaUnit: string;
   roofDivision: string;
   timeline: string;
   budget: string;
@@ -66,6 +70,11 @@ const GOAL_OPTIONS = [
   'Environmental profile'
 ];
 
+// EmailJS configuration - you'll need to set these up
+const EMAILJS_SERVICE_ID = 'your_service_id';
+const EMAILJS_TEMPLATE_ID = 'your_template_id';
+const EMAILJS_PUBLIC_KEY = 'your_public_key';
+
 export default function LeadCaptureModal({ isOpen, onClose, calculatorData }: LeadCaptureModalProps) {
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -76,7 +85,8 @@ export default function LeadCaptureModal({ isOpen, onClose, calculatorData }: Le
     address: '',
     roofType: '',
     roofAge: '',
-    roofArea: calculatorData.roofSize,
+    roofArea: calculatorData.roofSizeDisplay,
+    roofAreaUnit: calculatorData.unit,
     roofDivision: calculatorData.roofType,
     timeline: '',
     budget: '',
@@ -128,71 +138,62 @@ export default function LeadCaptureModal({ isOpen, onClose, calculatorData }: Le
     setIsSubmitting(true);
 
     try {
-      // Create email content
-      const emailContent = `
-        <h2>New Report Request from ${formData.name}</h2>
+      // Prepare email template parameters
+      const templateParams = {
+        to_email: 'info@agritectum.com', // Your email
+        from_name: formData.name,
+        from_email: formData.email,
+        subject: `New Report Request from ${formData.name}`,
         
-        <h3>Personal Information</h3>
-        <ul>
-          <li><strong>Name:</strong> ${formData.name}</li>
-          <li><strong>Email:</strong> ${formData.email}</li>
-          <li><strong>Phone:</strong> ${formData.phone || 'Not provided'}</li>
-        </ul>
+        // Personal Information
+        customer_name: formData.name,
+        customer_email: formData.email,
+        customer_phone: formData.phone || 'Not provided',
+        
+        // Company Information
+        company_name: formData.companyName || 'Not provided',
+        role: formData.role || 'Not provided',
+        
+        // Roof Information
+        address: formData.address,
+        roof_type: formData.roofType,
+        roof_age: formData.roofAge || 'Not provided',
+        roof_area: `${formData.roofArea} ${formData.roofAreaUnit}`,
+        current_roof_solution: formData.roofDivision,
+        
+        // Project Details
+        timeline: formData.timeline || 'Not specified',
+        budget: formData.budget || 'Not specified',
+        goals: formData.goals.length > 0 ? formData.goals.join(', ') : 'Not specified',
+        
+        // Calculator Settings
+        calc_roof_size: `${calculatorData.roofSizeDisplay} ${calculatorData.unit}`,
+        calc_roof_type: calculatorData.roofType,
+        calc_solar_panels: calculatorData.includeSolar ? 'Yes' : 'No',
+        
+        // Calculated Results
+        annual_co2_offset: `${calculatorData.totalCo2PerYear.toLocaleString()} kg/year`,
+        annual_energy_impact: `${calculatorData.totalEnergyPerYear.toLocaleString()} kWh/year`,
+        annual_nox_reduction: `${calculatorData.noxPerYear.toLocaleString()} kg/year`,
+        carbon_neutral_timeline: calculatorData.neutralYear ? `${calculatorData.neutralYear} years` : 'Not achievable with current setup',
+        total_installation_cost: `€${calculatorData.totalInstallationCost.toLocaleString()}`,
+        solar_generation: calculatorData.includeSolar ? `${calculatorData.solarEnergyPerYear.toLocaleString()} kWh/year` : 'N/A',
+        
+        // Marketing Preferences
+        newsletter_subscription: formData.acceptNewsletter ? 'Yes' : 'No',
+        
+        // Timestamp
+        submission_date: new Date().toLocaleDateString(),
+        submission_time: new Date().toLocaleTimeString()
+      };
 
-        <h3>Company Information</h3>
-        <ul>
-          <li><strong>Company:</strong> ${formData.companyName || 'Not provided'}</li>
-          <li><strong>Role:</strong> ${formData.role || 'Not provided'}</li>
-        </ul>
-
-        <h3>Roof Information</h3>
-        <ul>
-          <li><strong>Address:</strong> ${formData.address}</li>
-          <li><strong>Roof Type:</strong> ${formData.roofType}</li>
-          <li><strong>Roof Age:</strong> ${formData.roofAge || 'Not provided'}</li>
-          <li><strong>Roof Area:</strong> ${formData.roofArea} m²</li>
-          <li><strong>Current Roof Solution:</strong> ${formData.roofDivision}</li>
-        </ul>
-
-        <h3>Project Details</h3>
-        <ul>
-          <li><strong>Timeline:</strong> ${formData.timeline || 'Not specified'}</li>
-          <li><strong>Budget:</strong> ${formData.budget || 'Not specified'}</li>
-          <li><strong>Goals:</strong> ${formData.goals.length > 0 ? formData.goals.join(', ') : 'Not specified'}</li>
-        </ul>
-
-        <h3>Calculator Settings Used</h3>
-        <ul>
-          <li><strong>Roof Size:</strong> ${calculatorData.roofSize} m²</li>
-          <li><strong>Roof Type Selected:</strong> ${calculatorData.roofType}</li>
-          <li><strong>Solar Panels:</strong> ${calculatorData.includeSolar ? 'Yes' : 'No'}</li>
-        </ul>
-
-        <h3>Calculated Results</h3>
-        <ul>
-          <li><strong>Annual CO₂ Offset:</strong> ${calculatorData.totalCo2PerYear.toLocaleString()} kg/year</li>
-          <li><strong>Annual Energy Impact:</strong> ${calculatorData.totalEnergyPerYear.toLocaleString()} kWh/year</li>
-          <li><strong>Annual NOₓ Reduction:</strong> ${calculatorData.noxPerYear.toLocaleString()} kg/year</li>
-          <li><strong>Carbon Neutral Timeline:</strong> ${calculatorData.neutralYear ? calculatorData.neutralYear + ' years' : 'Not achievable with current setup'}</li>
-          <li><strong>Total Installation Cost:</strong> €${calculatorData.totalInstallationCost.toLocaleString()}</li>
-          ${calculatorData.includeSolar ? `<li><strong>Solar Generation (Year 1):</strong> ${calculatorData.solarEnergyPerYear.toLocaleString()} kWh/year</li>` : ''}
-        </ul>
-
-        <h3>Marketing Preferences</h3>
-        <ul>
-          <li><strong>Newsletter Subscription:</strong> ${formData.acceptNewsletter ? 'Yes' : 'No'}</li>
-        </ul>
-
-        <hr>
-        <p><em>This lead was generated from the Roof Impact Calculator on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</em></p>
-      `;
-
-      // In a real application, you would send this to your backend
-      // For now, we'll simulate the email sending
-      console.log('Email would be sent to info@yourdomain.dk with content:', emailContent);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Send email using EmailJS
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        templateParams,
+        EMAILJS_PUBLIC_KEY
+      );
       
       setIsSuccess(true);
       
@@ -209,7 +210,8 @@ export default function LeadCaptureModal({ isOpen, onClose, calculatorData }: Le
           address: '',
           roofType: '',
           roofAge: '',
-          roofArea: calculatorData.roofSize,
+          roofArea: calculatorData.roofSizeDisplay,
+          roofAreaUnit: calculatorData.unit,
           roofDivision: calculatorData.roofType,
           timeline: '',
           budget: '',
@@ -221,7 +223,7 @@ export default function LeadCaptureModal({ isOpen, onClose, calculatorData }: Le
       
     } catch (error) {
       console.error('Error submitting form:', error);
-      setErrors({ submit: 'There was an error submitting your request. Please try again.' });
+      setErrors({ submit: 'There was an error submitting your request. Please try again or contact us directly.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -403,7 +405,7 @@ export default function LeadCaptureModal({ isOpen, onClose, calculatorData }: Le
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Roof Area (m²)
+                      Roof Area ({calculatorData.unit})
                     </label>
                     <input
                       type="number"
@@ -412,6 +414,9 @@ export default function LeadCaptureModal({ isOpen, onClose, calculatorData }: Le
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       min="1"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Prefilled from calculator ({calculatorData.unit})
+                    </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -554,6 +559,14 @@ export default function LeadCaptureModal({ isOpen, onClose, calculatorData }: Le
             {errors.submit && (
               <p className="text-red-500 text-sm text-center">{errors.submit}</p>
             )}
+
+            {/* EmailJS Setup Notice */}
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                <strong>Setup Required:</strong> To enable email functionality, you need to configure EmailJS with your service credentials. 
+                The form currently shows a demo - emails won't be sent until configured.
+              </p>
+            </div>
           </form>
         )}
       </div>

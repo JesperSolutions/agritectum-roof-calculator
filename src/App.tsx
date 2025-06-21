@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
-import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun, FileText } from 'lucide-react';
+import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun, FileText, ToggleLeft, ToggleRight } from 'lucide-react';
 import LeadCaptureModal from './components/LeadCaptureModal';
 
 const ROOF_TYPES = {
@@ -58,26 +58,33 @@ const SOLAR_SPECS = {
   lifespan: 25 // years
 };
 
+// Conversion factor: 1 m² = 10.764 sq ft
+const M2_TO_SQFT = 10.764;
+
 export default function RoofImpactDashboard() {
   const [roofSize, setRoofSize] = useState(1000);
   const [roofType, setRoofType] = useState<keyof typeof ROOF_TYPES>("Photocatalytic Coating");
   const [includeSolar, setIncludeSolar] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [useMetric, setUseMetric] = useState(true); // true = m², false = sq ft
   const data = ROOF_TYPES[roofType];
 
-  const initialCo2 = 19 * roofSize;
-  const co2PerYear = data.co2 * roofSize;
-  const noxPerYear = data.nox * roofSize;
-  const energyPerYear = data.energy * roofSize;
+  // Convert roof size for calculations (always use m² internally)
+  const roofSizeM2 = useMetric ? roofSize : roofSize / M2_TO_SQFT;
+
+  const initialCo2 = 19 * roofSizeM2;
+  const co2PerYear = data.co2 * roofSizeM2;
+  const noxPerYear = data.nox * roofSizeM2;
+  const energyPerYear = data.energy * roofSizeM2;
 
   // Calculate annual solar generation (kWh/year) with performance factor
   const solarEnergyPerYear = includeSolar 
-    ? (SOLAR_SPECS.powerPerM2 * roofSize * SOLAR_SPECS.hoursPerDay 
+    ? (SOLAR_SPECS.powerPerM2 * roofSizeM2 * SOLAR_SPECS.hoursPerDay 
         * SOLAR_SPECS.daysPerYear * SOLAR_SPECS.performanceFactor) / 1000 
     : 0;  // kWh/year (includes derating for real conditions)
 
   const solarCo2PerYear = includeSolar ? solarEnergyPerYear * SOLAR_SPECS.co2PerKwh : 0;
-  const solarCost = includeSolar ? SOLAR_SPECS.costPerM2 * roofSize : 0;
+  const solarCost = includeSolar ? SOLAR_SPECS.costPerM2 * roofSizeM2 : 0;
 
   // Combined totals
   const totalEnergyPerYear = energyPerYear + solarEnergyPerYear;
@@ -86,9 +93,9 @@ export default function RoofImpactDashboard() {
   // Recalculate neutralYear with updated totalCo2PerYear
   const neutralYear = totalCo2PerYear > 0 ? Math.ceil(initialCo2 / totalCo2PerYear) : null;
 
-  const totalInstallationCost = (data.totalCost * roofSize) + solarCost;
-  const installationTimeHours = data.installationRate > 0 ? roofSize / data.installationRate : 0;
-  const solarInstallationHours = includeSolar ? roofSize / 20 : 0; // 20 m²/hour for solar
+  const totalInstallationCost = (data.totalCost * roofSizeM2) + solarCost;
+  const installationTimeHours = data.installationRate > 0 ? roofSizeM2 / data.installationRate : 0;
+  const solarInstallationHours = includeSolar ? roofSizeM2 / 20 : 0; // 20 m²/hour for solar
   const totalInstallationHours = installationTimeHours + solarInstallationHours;
   const installationDays = Math.ceil(totalInstallationHours / 8);
 
@@ -120,16 +127,18 @@ export default function RoofImpactDashboard() {
 
   const comparisonData = Object.entries(ROOF_TYPES).map(([name, typeData]) => ({
     name,
-    co2Offset: typeData.co2 * roofSize + (includeSolar ? solarCo2PerYear : 0),
-    energySavings: typeData.energy * roofSize + (includeSolar ? solarEnergyPerYear : 0),
-    noxReduction: typeData.nox * roofSize,
-    totalCost: typeData.totalCost * roofSize + (includeSolar ? solarCost : 0),
+    co2Offset: typeData.co2 * roofSizeM2 + (includeSolar ? solarCo2PerYear : 0),
+    energySavings: typeData.energy * roofSizeM2 + (includeSolar ? solarEnergyPerYear : 0),
+    noxReduction: typeData.nox * roofSizeM2,
+    totalCost: typeData.totalCost * roofSizeM2 + (includeSolar ? solarCost : 0),
     color: typeData.color
   }));
 
   // Calculator data for the modal
   const calculatorData = {
-    roofSize,
+    roofSize: roofSizeM2, // Always pass m² to modal
+    roofSizeDisplay: roofSize, // Display value in current unit
+    unit: useMetric ? 'm²' : 'sq ft',
     roofType,
     includeSolar,
     totalCo2PerYear,
@@ -139,6 +148,23 @@ export default function RoofImpactDashboard() {
     totalInstallationCost,
     solarEnergyPerYear
   };
+
+  // Handle unit conversion when toggling
+  const handleUnitToggle = () => {
+    if (useMetric) {
+      // Converting from m² to sq ft
+      setRoofSize(Math.round(roofSize * M2_TO_SQFT));
+    } else {
+      // Converting from sq ft to m²
+      setRoofSize(Math.round(roofSize / M2_TO_SQFT));
+    }
+    setUseMetric(!useMetric);
+  };
+
+  // Quick size buttons based on current unit
+  const quickSizes = useMetric 
+    ? [500, 1000, 2000, 5000] 
+    : [5382, 10764, 21528, 53820]; // Equivalent in sq ft
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
@@ -170,9 +196,19 @@ export default function RoofImpactDashboard() {
           <div className="grid md:grid-cols-2 gap-8">
             {/* Roof Size Input */}
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">
-                Estimated size of roof (m²)
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">
+                  Estimated size of roof ({useMetric ? 'm²' : 'sq ft'})
+                </label>
+                <button
+                  onClick={handleUnitToggle}
+                  className="flex items-center space-x-2 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm"
+                >
+                  <span className={useMetric ? 'font-semibold text-green-600' : 'text-gray-500'}>m²</span>
+                  {useMetric ? <ToggleLeft className="w-4 h-4 text-green-600" /> : <ToggleRight className="w-4 h-4 text-gray-500" />}
+                  <span className={!useMetric ? 'font-semibold text-green-600' : 'text-gray-500'}>sq ft</span>
+                </button>
+              </div>
               <div className="relative">
                 <input
                   type="number"
@@ -180,14 +216,14 @@ export default function RoofImpactDashboard() {
                   onChange={(e) => setRoofSize(Math.max(1, parseInt(e.target.value) || 1))}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-lg font-medium"
                   min="1"
-                  step="50"
+                  step={useMetric ? "50" : "500"}
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-4">
-                  <span className="text-gray-500 text-sm font-medium">m²</span>
+                  <span className="text-gray-500 text-sm font-medium">{useMetric ? 'm²' : 'sq ft'}</span>
                 </div>
               </div>
               <div className="flex space-x-2">
-                {[500, 1000, 2000, 5000].map((size) => (
+                {quickSizes.map((size) => (
                   <button
                     key={size}
                     onClick={() => setRoofSize(size)}
@@ -201,6 +237,11 @@ export default function RoofImpactDashboard() {
                   </button>
                 ))}
               </div>
+              {!useMetric && (
+                <div className="text-xs text-gray-500">
+                  ≈ {Math.round(roofSizeM2).toLocaleString()} m² for calculations
+                </div>
+              )}
             </div>
 
             {/* Roof Type Selection */}
@@ -541,7 +582,7 @@ export default function RoofImpactDashboard() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-emerald-50 rounded-lg">
                     <span className="text-gray-700">Roof Installation Cost</span>
-                    <span className="font-semibold text-emerald-700">€{(data.totalCost * roofSize).toLocaleString()}</span>
+                    <span className="font-semibold text-emerald-700">€{(data.totalCost * roofSizeM2).toLocaleString()}</span>
                   </div>
                   {includeSolar && (
                     <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
@@ -620,7 +661,7 @@ export default function RoofImpactDashboard() {
                 <div className="p-4 bg-yellow-50 rounded-lg">
                   <p className="text-gray-700 text-sm leading-relaxed">
                     <strong>Solar Panels:</strong> Clean panels twice yearly, inspect electrical connections annually. 
-                    Expected maintenance cost: €{(SOLAR_SPECS.maintenanceCost * roofSize).toLocaleString()}/year.
+                    Expected maintenance cost: €{(SOLAR_SPECS.maintenanceCost * roofSizeM2).toLocaleString()}/year.
                     Performance degrades by {(SOLAR_SPECS.degradationRate * 100)}% annually.
                   </p>
                 </div>
