@@ -71,9 +71,9 @@ const GOAL_OPTIONS = [
 ];
 
 // EmailJS configuration - you'll need to set these up
-const EMAILJS_SERVICE_ID = 'your_service_id';
-const EMAILJS_TEMPLATE_ID = 'your_template_id';
-const EMAILJS_PUBLIC_KEY = 'your_public_key';
+const EMAILJS_SERVICE_ID = 'service_labcoh9';
+const EMAILJS_TEMPLATE_ID = 'template_pac9jom';
+const EMAILJS_PUBLIC_KEY = 'BCoUz6Ty8c0oza6pZ';
 
 export default function LeadCaptureModal({ isOpen, onClose, calculatorData }: LeadCaptureModalProps) {
   const [formData, setFormData] = useState<FormData>({
