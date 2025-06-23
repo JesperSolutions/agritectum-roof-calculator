@@ -1,49 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
-import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun, FileText, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun, FileText, ToggleLeft, ToggleRight, Save, FolderOpen } from 'lucide-react';
 import LeadCaptureModal from './components/LeadCaptureModal';
-
-const ROOF_TYPES = {
-  "Photocatalytic Coating": { 
-    co2: 1.94, 
-    nox: 0.1, 
-    energy: 0, // Removed default energy savings
-    lifespan: 15, 
-    maintenance: 'Reapply every 2 years to maintain NOₓ effect.', 
-    color: '#5C9323',
-    materialCost: 3.00,
-    laborCost: 0.12,
-    totalCost: 3.12,
-    installationRate: 500,
-    description: 'Photocatalytic coating with NOₓ reduction properties'
-  },
-  "White - Cool Roof Coating": { 
-    co2: 6.65, 
-    nox: 0.02, 
-    energy: 8.5, // Keep energy savings for cool roof (cooling benefits)
-    lifespan: 20, 
-    maintenance: 'Clean every 2 years, recoat every 15–20 years.', 
-    color: '#8B5CF6',
-    materialCost: 46.98,
-    laborCost: 8.57,
-    totalCost: 55.55,
-    installationRate: 7,
-    description: 'High-performance Triflex coating with SRI 97'
-  },
-  "Green Roof": {
-    co2: 2.1,
-    nox: 0.05,
-    energy: 1.5, // Keep energy savings for green roof (insulation benefits)
-    lifespan: 40,
-    maintenance: 'Trim plants yearly, check drainage twice annually.',
-    color: '#34D399',
-    materialCost: 38.50,
-    laborCost: 6.50,
-    totalCost: 45.00,
-    installationRate: 12,
-    description: 'Extensive green roof system with sedum or grass'
-  }
-};
+import LocationSelector from './components/LocationSelector';
+import ProjectManager from './components/ProjectManager';
+import EnhancedCharts from './components/EnhancedCharts';
+import { Project, LocationData, ROOF_TYPES } from './types/project';
+import { generateProjectId } from './utils/projectStorage';
 
 // Add realistic performance and degradation factors to SOLAR_SPECS
 const SOLAR_SPECS = {
@@ -67,6 +30,12 @@ export default function RoofImpactDashboard() {
   const [includeSolar, setIncludeSolar] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [useMetric, setUseMetric] = useState(true); // true = m², false = sq ft
+  const [location, setLocation] = useState<LocationData | null>(null);
+  const [currentProject, setCurrentProject] = useState<Partial<Project>>({
+    id: generateProjectId(),
+    createdAt: new Date()
+  });
+
   const data = ROOF_TYPES[roofType];
 
   // Convert roof size for calculations (always use m² internally)
@@ -77,9 +46,13 @@ export default function RoofImpactDashboard() {
   const noxPerYear = data.nox * roofSizeM2;
   const energyPerYear = data.energy * roofSizeM2;
 
-  // Calculate annual solar generation (kWh/year) with performance factor
+  // Adjust solar calculations based on location
+  const locationMultiplier = location ? (location.solarIrradiance / 1100) : 1; // 1100 is base irradiance
+  const adjustedSolarHours = SOLAR_SPECS.hoursPerDay * locationMultiplier;
+
+  // Calculate annual solar generation (kWh/year) with performance factor and location adjustment
   const solarEnergyPerYear = includeSolar 
-    ? (SOLAR_SPECS.powerPerM2 * roofSizeM2 * SOLAR_SPECS.hoursPerDay 
+    ? (SOLAR_SPECS.powerPerM2 * roofSizeM2 * adjustedSolarHours 
         * SOLAR_SPECS.daysPerYear * SOLAR_SPECS.performanceFactor) / 1000 
     : 0;  // kWh/year (includes derating for real conditions)
 
@@ -98,6 +71,19 @@ export default function RoofImpactDashboard() {
   const solarInstallationHours = includeSolar ? roofSizeM2 / 20 : 0; // 20 m²/hour for solar
   const totalInstallationHours = installationTimeHours + solarInstallationHours;
   const installationDays = Math.ceil(totalInstallationHours / 8);
+
+  // Update current project when settings change
+  useEffect(() => {
+    setCurrentProject(prev => ({
+      ...prev,
+      roofSize: roofSizeM2,
+      roofType,
+      includeSolar,
+      useMetric,
+      location,
+      updatedAt: new Date()
+    }));
+  }, [roofSizeM2, roofType, includeSolar, useMetric, location]);
 
   // If we want to factor panel degradation into the 50-year chart:
   const chartData = [];
@@ -166,6 +152,27 @@ export default function RoofImpactDashboard() {
     ? [500, 1000, 2000, 5000] 
     : [5382, 10764, 21528, 53820]; // Equivalent in sq ft
 
+  const handleProjectLoad = (project: Project) => {
+    setRoofSize(project.useMetric ? project.roofSize : Math.round(project.roofSize * M2_TO_SQFT));
+    setRoofType(project.roofType);
+    setIncludeSolar(project.includeSolar);
+    setUseMetric(project.useMetric);
+    setLocation(project.location || null);
+    setCurrentProject(project);
+  };
+
+  const handleNewProject = () => {
+    setRoofSize(1000);
+    setRoofType("Photocatalytic Coating");
+    setIncludeSolar(false);
+    setUseMetric(true);
+    setLocation(null);
+    setCurrentProject({
+      id: generateProjectId(),
+      createdAt: new Date()
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
       {/* Header */}
@@ -186,6 +193,27 @@ export default function RoofImpactDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        {/* Project Management */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+          <div className="flex items-center space-x-3 mb-6">
+            <FolderOpen className="w-6 h-6 text-purple-600" />
+            <h2 className="text-xl font-semibold text-gray-900">Project Management</h2>
+          </div>
+          <ProjectManager 
+            currentProject={currentProject}
+            onProjectLoad={handleProjectLoad}
+            onNewProject={handleNewProject}
+          />
+        </div>
+
+        {/* Location Selector */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+          <LocationSelector 
+            location={location}
+            onLocationChange={setLocation}
+          />
+        </div>
+
         {/* Controls Section */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
           <div className="flex items-center space-x-3 mb-6">
@@ -300,10 +328,12 @@ export default function RoofImpactDashboard() {
                   </p>
                   <div className="mt-1 text-xs text-gray-500">
                     Performance factor: {(SOLAR_SPECS.performanceFactor * 100)}% • Degradation: {(SOLAR_SPECS.degradationRate * 100)}%/year
+                    {location && ` • Location adjusted: ${(locationMultiplier * 100).toFixed(0)}%`}
                   </div>
                   {includeSolar && (
                     <div className="mt-2 text-sm text-yellow-700 font-medium">
                       Expected generation: {solarEnergyPerYear.toLocaleString()} kWh/year (Year 1)
+                      {location && ` • Irradiance: ${location.solarIrradiance} kWh/m²/year`}
                     </div>
                   )}
                 </div>
@@ -408,114 +438,59 @@ export default function RoofImpactDashboard() {
           </div>
         </div>
 
-        {/* Charts Section */}
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* CO₂ Impact Over Time */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-            <div className="flex items-center space-x-3 mb-6">
-              <TrendingUp className="w-6 h-6 text-green-600" />
-              <h3 className="text-xl font-semibold text-gray-900">CO₂ Impact Over 50 Years</h3>
-              {includeSolar && (
-                <div className="text-xs text-gray-500 bg-yellow-50 px-2 py-1 rounded">
-                  Includes solar degradation
-                </div>
-              )}
-            </div>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="year" stroke="#666" />
-                  <YAxis stroke="#666" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '12px',
-                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                    }}
-                    formatter={(value: any, name: string) => [
-                      `${Number(value).toLocaleString()} kg`,
-                      name === 'cumulativeOffset' ? 'Cumulative CO₂ Offset' : 
-                      name === 'netCo2' ? 'Remaining CO₂ Debt' : name
-                    ]}
-                  />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="cumulativeOffset" 
-                    stroke="#10b981" 
-                    strokeWidth={3}
-                    name="Cumulative CO₂ Offset"
-                    dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="netCo2" 
-                    stroke="#ef4444" 
-                    strokeWidth={3}
-                    name="Remaining CO₂ Debt"
-                    dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
-                  />
-                  {includeSolar && (
-                    <Line 
-                      type="monotone" 
-                      dataKey="solarGeneration" 
-                      stroke="#f59e0b" 
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                      name="Annual Solar Generation"
-                      dot={{ fill: '#f59e0b', strokeWidth: 2, r: 3 }}
-                    />
-                  )}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+        {/* Enhanced Charts Section */}
+        <EnhancedCharts 
+          chartData={chartData}
+          roofType={roofType}
+          includeSolar={includeSolar}
+          totalCo2PerYear={totalCo2PerYear}
+          totalEnergyPerYear={totalEnergyPerYear}
+          noxPerYear={noxPerYear}
+          location={location}
+        />
 
-          {/* Cost vs Environmental Impact Comparison */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-            <div className="flex items-center space-x-3 mb-6">
-              <Info className="w-6 h-6 text-blue-600" />
-              <h3 className="text-xl font-semibold text-gray-900">Cost vs CO₂ Impact</h3>
-            </div>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={comparisonData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="name" stroke="#666" angle={-45} textAnchor="end" height={80} />
-                  <YAxis yAxisId="left" stroke="#666" />
-                  <YAxis yAxisId="right" orientation="right" stroke="#666" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '12px',
-                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                    }}
-                    formatter={(value: any, name: string) => [
-                      name === 'totalCost' ? `€${Number(value).toLocaleString()}` : `${Number(value).toLocaleString()} kg`,
-                      name === 'co2Offset' ? 'Annual CO₂ Offset' : 'Total Installation Cost'
-                    ]}
-                  />
-                  <Bar 
-                    yAxisId="left"
-                    dataKey="co2Offset" 
-                    fill="#10b981"
-                    radius={[4, 4, 0, 0]}
-                    name="Annual CO₂ Offset"
-                  />
-                  <Bar 
-                    yAxisId="right"
-                    dataKey="totalCost" 
-                    fill="#3b82f6"
-                    radius={[4, 4, 0, 0]}
-                    name="Total Installation Cost"
-                    opacity={0.7}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+        {/* Original Comparison Chart */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+          <div className="flex items-center space-x-3 mb-6">
+            <Info className="w-6 h-6 text-blue-600" />
+            <h3 className="text-xl font-semibold text-gray-900">Cost vs CO₂ Impact Comparison</h3>
+          </div>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={comparisonData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="name" stroke="#666" angle={-45} textAnchor="end" height={80} />
+                <YAxis yAxisId="left" stroke="#666" />
+                <YAxis yAxisId="right" orientation="right" stroke="#666" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'white', 
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value: any, name: string) => [
+                    name === 'totalCost' ? `€${Number(value).toLocaleString()}` : `${Number(value).toLocaleString()} kg`,
+                    name === 'co2Offset' ? 'Annual CO₂ Offset' : 'Total Installation Cost'
+                  ]}
+                />
+                <Bar 
+                  yAxisId="left"
+                  dataKey="co2Offset" 
+                  fill="#10b981"
+                  radius={[4, 4, 0, 0]}
+                  name="Annual CO₂ Offset"
+                />
+                <Bar 
+                  yAxisId="right"
+                  dataKey="totalCost" 
+                  fill="#3b82f6"
+                  radius={[4, 4, 0, 0]}
+                  name="Total Installation Cost"
+                  opacity={0.7}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
