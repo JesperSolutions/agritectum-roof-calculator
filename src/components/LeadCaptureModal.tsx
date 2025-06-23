@@ -70,7 +70,7 @@ const GOAL_OPTIONS = [
   'Environmental profile'
 ];
 
-// EmailJS configuration - you'll need to set these up
+// EmailJS configuration
 const EMAILJS_SERVICE_ID = 'service_labcoh9';
 const EMAILJS_TEMPLATE_ID = 'template_pac9jom';
 const EMAILJS_PUBLIC_KEY = 'BCoUz6Ty8c0oza6pZ';
@@ -559,14 +559,6 @@ export default function LeadCaptureModal({ isOpen, onClose, calculatorData }: Le
             {errors.submit && (
               <p className="text-red-500 text-sm text-center">{errors.submit}</p>
             )}
-
-            {/* EmailJS Setup Notice */}
-            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800">
-                <strong>Setup Required:</strong> To enable email functionality, you need to configure EmailJS with your service credentials. 
-                The form currently shows a demo - emails won't be sent until configured.
-              </p>
-            </div>
           </form>
         )}
       </div>
