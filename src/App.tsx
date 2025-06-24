@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
-import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun, FileText, ToggleLeft, ToggleRight, Save, FolderOpen, HelpCircle, Undo, Redo, Play } from 'lucide-react';
+import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun, FileText, ToggleLeft, ToggleRight, Save, FolderOpen, HelpCircle, Undo, Redo, Play, Filter, Grid, List } from 'lucide-react';
 import LeadCaptureModal from './components/LeadCaptureModal';
 import LocationSelector from './components/LocationSelector';
 import ProjectManager from './components/ProjectManager';
@@ -10,7 +10,7 @@ import HelpTooltip from './components/HelpTooltip';
 import GuidedTour from './components/GuidedTour';
 import ProgressIndicator from './components/ProgressIndicator';
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
-import { Project, LocationData, ROOF_TYPES } from './types/project';
+import { Project, LocationData, ROOF_TYPES, ROOF_CATEGORIES } from './types/project';
 import { generateProjectId } from './utils/projectStorage';
 import { useUndoRedo } from './hooks/useUndoRedo';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -43,7 +43,7 @@ export default function RoofImpactDashboard() {
   // Undo/Redo state management
   const [appState, undoRedoActions] = useUndoRedo<AppState>({
     roofSize: 1000,
-    roofType: "Photocatalytic Coating",
+    roofType: "Photocatalytic Coating - Standard",
     includeSolar: false,
     useMetric: true,
     location: null
@@ -56,6 +56,8 @@ export default function RoofImpactDashboard() {
   });
   const [showTour, setShowTour] = useState(false);
   const [hasSeenTour, setHasSeenTour] = useState(false);
+  const [roofTypeView, setRoofTypeView] = useState<'grid' | 'list'>('grid');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   // Check if user has seen the tour before
   useEffect(() => {
@@ -135,6 +137,11 @@ export default function RoofImpactDashboard() {
   ];
 
   const currentStepId = progressSteps.find(step => step.status === 'pending')?.id || 'completed';
+
+  // Filter roof types by category
+  const filteredRoofTypes = Object.entries(ROOF_TYPES).filter(([_, typeData]) => 
+    selectedCategory === 'all' || typeData.category === selectedCategory
+  );
 
   // Keyboard shortcuts
   const shortcuts = [
@@ -287,7 +294,7 @@ export default function RoofImpactDashboard() {
   function handleNewProject() {
     const newState = {
       roofSize: 1000,
-      roofType: "Photocatalytic Coating" as keyof typeof ROOF_TYPES,
+      roofType: "Photocatalytic Coating - Standard" as keyof typeof ROOF_TYPES,
       includeSolar: false,
       useMetric: true,
       location: null
@@ -324,6 +331,15 @@ export default function RoofImpactDashboard() {
     localStorage.setItem('roof-calculator-tour-seen', 'true');
     setHasSeenTour(true);
     setShowTour(false);
+  };
+
+  const getComplexityColor = (complexity: string) => {
+    switch (complexity) {
+      case 'simple': return 'text-green-600 bg-green-100';
+      case 'moderate': return 'text-yellow-600 bg-yellow-100';
+      case 'complex': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
   };
 
   return (
@@ -490,14 +506,55 @@ export default function RoofImpactDashboard() {
 
             {/* Roof Type Selection */}
             <div className="space-y-3" data-tour="roof-type">
-              <div className="flex items-center space-x-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Roof Type
-                </label>
-                <HelpTooltip content="Choose from different sustainable roofing solutions. Each type offers different environmental benefits, costs, and lifespans. Photocatalytic coating reduces air pollution, cool roof coating saves energy, and green roofs provide insulation and biodiversity benefits." />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Roof Type
+                  </label>
+                  <HelpTooltip content="Choose from different sustainable roofing solutions. Each type offers different environmental benefits, costs, and lifespans. Filter by category and view detailed specifications for each option." />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setRoofTypeView(roofTypeView === 'grid' ? 'list' : 'grid')}
+                    className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
+                    title={`Switch to ${roofTypeView === 'grid' ? 'list' : 'grid'} view`}
+                  >
+                    {roofTypeView === 'grid' ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
-              <div className="grid grid-cols-1 gap-3">
-                {Object.entries(ROOF_TYPES).map(([type, typeData]) => (
+
+              {/* Category Filter */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <button
+                  onClick={() => setSelectedCategory('all')}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                    selectedCategory === 'all' 
+                      ? 'bg-blue-100 text-blue-700 border border-blue-300' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  All Types
+                </button>
+                {Object.entries(ROOF_CATEGORIES).map(([key, category]) => (
+                  <button
+                    key={key}
+                    onClick={() => setSelectedCategory(key)}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1 ${
+                      selectedCategory === key 
+                        ? 'bg-blue-100 text-blue-700 border border-blue-300' 
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    <span>{category.icon}</span>
+                    <span>{category.name}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Roof Type Options */}
+              <div className={roofTypeView === 'grid' ? 'grid grid-cols-1 gap-3' : 'space-y-2'}>
+                {filteredRoofTypes.map(([type, typeData]) => (
                   <button
                     key={type}
                     onClick={() => undoRedoActions.set({ 
@@ -510,20 +567,48 @@ export default function RoofImpactDashboard() {
                         : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div 
-                          className="w-4 h-4 rounded-full"
-                          style={{ backgroundColor: typeData.color }}
-                        />
-                        <div>
-                          <div className="font-medium text-gray-900">{type}</div>
-                          <div className="text-xs text-gray-500">{typeData.lifespan} year lifespan</div>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <div 
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: typeData.color }}
+                          />
+                          <div>
+                            <div className="font-medium text-gray-900">{type}</div>
+                            <div className="text-xs text-gray-500">{typeData.description}</div>
+                          </div>
                         </div>
+                        
+                        <div className="flex items-center space-x-4 text-xs text-gray-600 mb-2">
+                          <span className={`px-2 py-1 rounded-full ${getComplexityColor(typeData.complexity)}`}>
+                            {typeData.complexity}
+                          </span>
+                          <span>{typeData.lifespan} years</span>
+                          <span>{typeData.warranty} yr warranty</span>
+                        </div>
+
+                        {roofTypeView === 'list' && (
+                          <div className="grid grid-cols-3 gap-2 text-xs text-gray-600 mt-2">
+                            <div>
+                              <span className="text-gray-500">CO₂:</span>
+                              <span className="font-medium ml-1">{typeData.co2} kg/m²/yr</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Energy:</span>
+                              <span className="font-medium ml-1">{typeData.energy} kWh/m²/yr</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">NOₓ:</span>
+                              <span className="font-medium ml-1">{typeData.nox} kg/m²/yr</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div className="text-right">
+                      
+                      <div className="text-right ml-4">
                         <div className="text-sm font-semibold text-gray-900">
-                          {typeData.totalCost > 0 ? `€${typeData.totalCost.toFixed(2)}/m²` : 'Baseline'}
+                          €{typeData.totalCost.toFixed(2)}/m²
                         </div>
                         <div className="text-xs text-gray-500">
                           {typeData.installationRate > 0 ? `${typeData.installationRate} m²/h` : 'Standard'}
@@ -884,6 +969,19 @@ export default function RoofImpactDashboard() {
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-700">Energy Efficiency</span>
                     <span className="font-semibold text-gray-700">{data.energy} kWh/m²/year</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-700">Complexity Level</span>
+                    <span className={`font-semibold capitalize ${
+                      data.complexity === 'simple' ? 'text-green-700' :
+                      data.complexity === 'moderate' ? 'text-yellow-700' : 'text-red-700'
+                    }`}>
+                      {data.complexity}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-700">Warranty Period</span>
+                    <span className="font-semibold text-gray-700">{data.warranty} years</span>
                   </div>
                   {appState.includeSolar && (
                     <>
