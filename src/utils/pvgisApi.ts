@@ -5,7 +5,8 @@
 
 import { PVGISData, MonthlyData } from './solarCalculations';
 
-const PVGIS_BASE_URL = 'https://re.jrc.ec.europa.eu/api/v5_2';
+// Use proxy path for development, direct URL for production
+const PVGIS_BASE_URL = import.meta.env.DEV ? '/api/pvgis' : 'https://re.jrc.ec.europa.eu/api/v5_2';
 
 interface PVGISMonthlyResponse {
   inputs: {
