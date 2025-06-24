@@ -98,18 +98,52 @@ export class PVGISApi {
         if (azimuth !== undefined) params.append('aspect', azimuth.toString());
       }
 
-      const response = await fetch(`${PVGIS_BASE_URL}/seriescalc?${params}`);
+      const url = `${PVGIS_BASE_URL}/seriescalc?${params}`;
+      console.log('Fetching PVGIS data from:', url);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+        // Add timeout and other fetch options for better error handling
+        signal: AbortSignal.timeout(30000) // 30 second timeout
+      });
       
       if (!response.ok) {
-        throw new Error(`PVGIS API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(`PVGIS API error: ${response.status} ${response.statusText}. Response: ${errorText}`);
       }
 
       const data: PVGISMonthlyResponse = await response.json();
       
       return this.processPVGISData(data);
     } catch (error) {
-      console.error('Error fetching PVGIS data:', error);
-      throw new Error('Failed to fetch solar irradiance data. Please try again.');
+      // Enhanced error logging with more specific error information
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.error('Network error fetching PVGIS data:', {
+          message: error.message,
+          latitude,
+          longitude,
+          url: `${PVGIS_BASE_URL}/seriescalc`,
+          error: error
+        });
+        throw new Error('Network connection failed. Please check your internet connection and try again. The PVGIS service may also be temporarily unavailable.');
+      } else if (error instanceof DOMException && error.name === 'AbortError') {
+        console.error('PVGIS request timeout:', error);
+        throw new Error('Request timed out. The PVGIS service is taking too long to respond. Please try again.');
+      } else if (error instanceof Error) {
+        console.error('Error fetching PVGIS data:', {
+          message: error.message,
+          stack: error.stack,
+          latitude,
+          longitude
+        });
+        throw new Error(`Failed to fetch solar irradiance data: ${error.message}`);
+      } else {
+        console.error('Unknown error fetching PVGIS data:', error);
+        throw new Error('An unexpected error occurred while fetching solar data. Please try again.');
+      }
     }
   }
 
@@ -151,10 +185,20 @@ export class PVGISApi {
         if (azimuth !== undefined) params.append('aspect', azimuth.toString());
       }
 
-      const response = await fetch(`${PVGIS_BASE_URL}/PVcalc?${params}`);
+      const url = `${PVGIS_BASE_URL}/PVcalc?${params}`;
+      console.log('Fetching PVGIS PV data from:', url);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+        signal: AbortSignal.timeout(30000) // 30 second timeout
+      });
       
       if (!response.ok) {
-        throw new Error(`PVGIS PV API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(`PVGIS PV API error: ${response.status} ${response.statusText}. Response: ${errorText}`);
       }
 
       const data: PVGISPVResponse = await response.json();
@@ -173,8 +217,30 @@ export class PVGISApi {
           data.inputs.mounting_system.fixed.azimuth.value : undefined
       };
     } catch (error) {
-      console.error('Error fetching PVGIS PV data:', error);
-      throw new Error('Failed to fetch PV system data. Please try again.');
+      // Enhanced error logging for PV data
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.error('Network error fetching PVGIS PV data:', {
+          message: error.message,
+          latitude,
+          longitude,
+          error: error
+        });
+        throw new Error('Network connection failed while fetching PV system data. Please check your internet connection and try again.');
+      } else if (error instanceof DOMException && error.name === 'AbortError') {
+        console.error('PVGIS PV request timeout:', error);
+        throw new Error('PV data request timed out. Please try again.');
+      } else if (error instanceof Error) {
+        console.error('Error fetching PVGIS PV data:', {
+          message: error.message,
+          stack: error.stack,
+          latitude,
+          longitude
+        });
+        throw new Error(`Failed to fetch PV system data: ${error.message}`);
+      } else {
+        console.error('Unknown error fetching PVGIS PV data:', error);
+        throw new Error('An unexpected error occurred while fetching PV system data. Please try again.');
+      }
     }
   }
 
