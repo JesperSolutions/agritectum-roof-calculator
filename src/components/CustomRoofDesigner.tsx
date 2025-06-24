@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Leaf, Zap, Wind, Sun, Calculator, TrendingUp, AlertTriangle, CheckCircle, Info, BarChart3, PieChart, Target, Settings, Droplets, Thermometer, Shield, Award, Clock, DollarSign, Activity, Layers, MapPin, Calendar, Download, Share2, RefreshCw, Maximize2, Eye, EyeOff } from 'lucide-react';
+import { Leaf, Zap, Wind, Sun, Calculator, TrendingUp, AlertTriangle, CheckCircle, Info, BarChart3, PieChart, Target, Settings, Droplets, Thermometer, Shield, Award, Clock, DollarSign, Activity, Layers, MapPin, Calendar, Download, Share2, RefreshCw, Maximize2, Eye, EyeOff, Save } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, PieChart as RechartsPieChart, Cell, BarChart, Bar, Pie, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ComposedChart } from 'recharts';
 import HelpTooltip from './HelpTooltip';
 
