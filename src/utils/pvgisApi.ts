@@ -87,6 +87,11 @@ export class PVGISApi {
     azimuth?: number
   ): Promise<PVGISData> {
     try {
+      // Validate coordinates
+      if (!this.isValidCoordinate(latitude, longitude)) {
+        throw new Error(`Invalid coordinates: lat=${latitude}, lon=${longitude}`);
+      }
+
       // Build URL parameters for daily radiation data
       const params = new URLSearchParams({
         lat: latitude.toFixed(6),
@@ -111,6 +116,7 @@ export class PVGISApi {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (compatible; Solar Calculator App)',
         },
         // Add timeout and other fetch options for better error handling
         signal: AbortSignal.timeout(30000) // 30 second timeout
@@ -118,12 +124,25 @@ export class PVGISApi {
       
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
-        throw new Error(`PVGIS API error: ${response.status} ${response.statusText}. Response: ${errorText}`);
+        console.error('PVGIS API HTTP error:', {
+          status: response.status,
+          statusText: response.statusText,
+          url,
+          response: errorText
+        });
+        throw new Error(`PVGIS API error: ${response.status} ${response.statusText}`);
       }
 
-      const data: PVGISDailyResponse = await response.json();
+      const data = await response.json();
+      console.log('Raw PVGIS response:', data);
       
-      return this.processPVGISData(data);
+      const processed = this.processPVGISData(data);
+      
+      if (!processed) {
+        throw new Error("Failed to process PVGIS data - invalid response structure");
+      }
+      
+      return processed;
     } catch (error) {
       // Enhanced error logging with more specific error information
       if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -173,6 +192,11 @@ export class PVGISApi {
     optimalAzimuth?: number;
   }> {
     try {
+      // Validate coordinates
+      if (!this.isValidCoordinate(latitude, longitude)) {
+        throw new Error(`Invalid coordinates: lat=${latitude}, lon=${longitude}`);
+      }
+
       const params = new URLSearchParams({
         lat: latitude.toFixed(6),
         lon: longitude.toFixed(6),
@@ -198,28 +222,53 @@ export class PVGISApi {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (compatible; Solar Calculator App)',
         },
         signal: AbortSignal.timeout(30000) // 30 second timeout
       });
       
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
-        throw new Error(`PVGIS PV API error: ${response.status} ${response.statusText}. Response: ${errorText}`);
+        console.error('PVGIS PV API HTTP error:', {
+          status: response.status,
+          statusText: response.statusText,
+          url,
+          response: errorText
+        });
+        throw new Error(`PVGIS PV API error: ${response.status} ${response.statusText}`);
       }
 
-      const data: PVGISPVResponse = await response.json();
+      const data = await response.json();
+      console.log('Raw PVGIS PV response:', data);
       
-      const monthlyOutput = data.outputs.monthly.map(month => month.E_m);
-      const yearlyOutput = data.outputs.totals.E_y;
-      const performanceRatio = yearlyOutput / (peakPower * data.outputs.totals.H_year);
+      // Defensive checks for PV data
+      if (!data || !data.outputs) {
+        console.error("Invalid PVGIS PV response - missing outputs:", data);
+        throw new Error("Invalid PVGIS PV response structure");
+      }
+
+      if (!data.outputs.monthly || !Array.isArray(data.outputs.monthly)) {
+        console.error("Invalid PVGIS PV response - missing monthly data:", data.outputs);
+        throw new Error("Missing monthly data in PVGIS PV response");
+      }
+
+      if (!data.outputs.totals) {
+        console.error("Invalid PVGIS PV response - missing totals:", data.outputs);
+        throw new Error("Missing totals data in PVGIS PV response");
+      }
+      
+      const monthlyOutput = data.outputs.monthly.map((month: any) => month.E_m || 0);
+      const yearlyOutput = data.outputs.totals.E_y || 0;
+      const yearlyIrradiance = data.outputs.totals.H_year || 1000; // Fallback
+      const performanceRatio = yearlyOutput / (peakPower * yearlyIrradiance);
 
       return {
         yearlyOutput,
         monthlyOutput,
-        performanceRatio,
-        optimalTilt: data.inputs.mounting_system.fixed.slope.optimal ? 
+        performanceRatio: Math.max(0, Math.min(1, performanceRatio)), // Clamp between 0-1
+        optimalTilt: data.inputs?.mounting_system?.fixed?.slope?.optimal ? 
           data.inputs.mounting_system.fixed.slope.value : undefined,
-        optimalAzimuth: data.inputs.mounting_system.fixed.azimuth.optimal ? 
+        optimalAzimuth: data.inputs?.mounting_system?.fixed?.azimuth?.optimal ? 
           data.inputs.mounting_system.fixed.azimuth.value : undefined
       };
     } catch (error) {
@@ -296,93 +345,153 @@ export class PVGISApi {
   }
 
   /**
-   * Process raw PVGIS daily data into monthly aggregated format
+   * Validate coordinates
    */
-  private static processPVGISData(data: PVGISDailyResponse): PVGISData {
-    const monthNames = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
+  private static isValidCoordinate(latitude: number, longitude: number): boolean {
+    return !isNaN(latitude) && !isNaN(longitude) &&
+           latitude >= -90 && latitude <= 90 &&
+           longitude >= -180 && longitude <= 180;
+  }
 
-    const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  /**
+   * Process raw PVGIS daily data into monthly aggregated format with robust error handling
+   */
+  private static processPVGISData(response: any): PVGISData | null {
+    try {
+      // Defensive checks for response structure
+      if (!response) {
+        console.error("PVGIS response is null or undefined");
+        return null;
+      }
 
-    // Aggregate daily data into monthly averages
-    const monthlyAggregates: { [month: number]: { 
-      H_sun: number[], 
-      T2m: number[], 
-      Int: number[] 
-    } } = {};
+      if (!response.inputs) {
+        console.error("Invalid PVGIS response - missing inputs:", response);
+        return null;
+      }
 
-    // Initialize monthly aggregates
-    for (let i = 1; i <= 12; i++) {
-      monthlyAggregates[i] = { H_sun: [], T2m: [], Int: [] };
-    }
+      if (!response.inputs.location) {
+        console.error("Invalid PVGIS response - missing location:", response.inputs);
+        return null;
+      }
 
-    // Group daily data by month
-    data.outputs.daily_profile.forEach(day => {
-      monthlyAggregates[day.month].H_sun.push(day.H_sun / 1000); // Convert Wh/m² to kWh/m²
-      monthlyAggregates[day.month].T2m.push(day.T2m);
-      monthlyAggregates[day.month].Int.push(day.Int / 1000); // Convert Wh/m² to kWh/m²
-    });
+      if (!response.outputs) {
+        console.error("Invalid PVGIS response - missing outputs:", response);
+        return null;
+      }
 
-    // Calculate monthly averages
-    const monthly: MonthlyData[] = [];
-    let yearlyTotalIrradiance = 0;
-    let yearlyAvgTemperature = 0;
+      if (!response.outputs.daily_profile || !Array.isArray(response.outputs.daily_profile)) {
+        console.error("Invalid PVGIS response - missing or invalid daily_profile:", response.outputs);
+        return null;
+      }
 
-    for (let month = 1; month <= 12; month++) {
-      const monthData = monthlyAggregates[month];
-      
-      const avgDailyIrradiance = monthData.H_sun.length > 0 
-        ? monthData.H_sun.reduce((sum, val) => sum + val, 0) / monthData.H_sun.length
-        : 0;
-      
-      const avgTemperature = monthData.T2m.length > 0
-        ? monthData.T2m.reduce((sum, val) => sum + val, 0) / monthData.T2m.length
-        : 15; // Default temperature
-      
-      const totalIrradiance = avgDailyIrradiance * daysInMonth[month - 1];
-      
-      monthly.push({
-        month,
-        monthName: monthNames[month - 1],
-        avgDailyIrradiance,
-        avgTemperature,
-        optimalTilt: Math.abs(data.inputs.location.latitude),
-        daysInMonth: daysInMonth[month - 1],
-        totalIrradiance
+      if (response.outputs.daily_profile.length === 0) {
+        console.error("PVGIS response contains empty daily_profile array");
+        return null;
+      }
+
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+
+      const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+      // Aggregate daily data into monthly averages
+      const monthlyAggregates: { [month: number]: { 
+        H_sun: number[], 
+        T2m: number[], 
+        Int: number[] 
+      } } = {};
+
+      // Initialize monthly aggregates
+      for (let i = 1; i <= 12; i++) {
+        monthlyAggregates[i] = { H_sun: [], T2m: [], Int: [] };
+      }
+
+      // Group daily data by month with validation
+      response.outputs.daily_profile.forEach((day: any) => {
+        // Validate day object
+        if (!day || typeof day.month !== 'number' || day.month < 1 || day.month > 12) {
+          console.warn("Invalid day object in daily_profile:", day);
+          return;
+        }
+
+        // Validate required fields with fallbacks
+        const H_sun = typeof day.H_sun === 'number' ? day.H_sun : 0;
+        const T2m = typeof day.T2m === 'number' ? day.T2m : 15; // Default temperature
+        const Int = typeof day.Int === 'number' ? day.Int : H_sun; // Fallback to H_sun
+
+        monthlyAggregates[day.month].H_sun.push(H_sun / 1000); // Convert Wh/m² to kWh/m²
+        monthlyAggregates[day.month].T2m.push(T2m);
+        monthlyAggregates[day.month].Int.push(Int / 1000); // Convert Wh/m² to kWh/m²
       });
 
-      yearlyTotalIrradiance += totalIrradiance;
-      yearlyAvgTemperature += avgTemperature;
-    }
+      // Calculate monthly averages
+      const monthly: MonthlyData[] = [];
+      let yearlyTotalIrradiance = 0;
+      let yearlyAvgTemperature = 0;
 
-    yearlyAvgTemperature /= 12;
+      for (let month = 1; month <= 12; month++) {
+        const monthData = monthlyAggregates[month];
+        
+        const avgDailyIrradiance = monthData.H_sun.length > 0 
+          ? monthData.H_sun.reduce((sum, val) => sum + val, 0) / monthData.H_sun.length
+          : 3.0; // Default daily irradiance (kWh/m²/day)
+        
+        const avgTemperature = monthData.T2m.length > 0
+          ? monthData.T2m.reduce((sum, val) => sum + val, 0) / monthData.T2m.length
+          : 15; // Default temperature
+        
+        const totalIrradiance = avgDailyIrradiance * daysInMonth[month - 1];
+        
+        monthly.push({
+          month,
+          monthName: monthNames[month - 1],
+          avgDailyIrradiance,
+          avgTemperature,
+          optimalTilt: Math.abs(response.inputs.location.latitude || 45),
+          daysInMonth: daysInMonth[month - 1],
+          totalIrradiance
+        });
 
-    // Calculate PV potential (simplified)
-    const systemEfficiency = 0.15; // 15% system efficiency
-    const performanceRatio = 0.75; // 75% performance ratio
-    const fixedSystem = yearlyTotalIrradiance * systemEfficiency * performanceRatio * 1000; // kWh/kWp
-    
-    return {
-      location: {
-        latitude: data.inputs.location.latitude,
-        longitude: data.inputs.location.longitude,
-        elevation: data.inputs.location.elevation
-      },
-      monthly,
-      yearly: {
-        totalIrradiance: yearlyTotalIrradiance,
-        avgTemperature: yearlyAvgTemperature,
-        optimalTilt: Math.abs(data.inputs.location.latitude),
-        optimalAzimuth: 180 // South-facing default
-      },
-      pvPotential: {
-        fixedSystem,
-        trackingSystem: fixedSystem * 1.25, // 25% improvement with tracking
-        optimalFixed: fixedSystem * 1.1 // 10% improvement with optimal angles
+        yearlyTotalIrradiance += totalIrradiance;
+        yearlyAvgTemperature += avgTemperature;
       }
-    };
+
+      yearlyAvgTemperature /= 12;
+
+      // Calculate PV potential (simplified) with validation
+      const systemEfficiency = 0.15; // 15% system efficiency
+      const performanceRatio = 0.75; // 75% performance ratio
+      const fixedSystem = yearlyTotalIrradiance * systemEfficiency * performanceRatio * 1000; // kWh/kWp
+      
+      const result: PVGISData = {
+        location: {
+          latitude: response.inputs.location.latitude || 0,
+          longitude: response.inputs.location.longitude || 0,
+          elevation: response.inputs.location.elevation || 0
+        },
+        monthly,
+        yearly: {
+          totalIrradiance: yearlyTotalIrradiance,
+          avgTemperature: yearlyAvgTemperature,
+          optimalTilt: Math.abs(response.inputs.location.latitude || 45),
+          optimalAzimuth: 180 // South-facing default
+        },
+        pvPotential: {
+          fixedSystem: Math.max(500, fixedSystem), // Minimum 500 kWh/kWp/year
+          trackingSystem: Math.max(625, fixedSystem * 1.25), // 25% improvement with tracking
+          optimalFixed: Math.max(550, fixedSystem * 1.1) // 10% improvement with optimal angles
+        }
+      };
+
+      console.log('Successfully processed PVGIS data:', result);
+      return result;
+
+    } catch (error) {
+      console.error('Error processing PVGIS data:', error, 'Raw response:', response);
+      return null;
+    }
   }
 }
 
