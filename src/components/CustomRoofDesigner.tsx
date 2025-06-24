@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Leaf, Zap, Wind, Sun, Calculator, TrendingUp, AlertTriangle, CheckCircle, Info, BarChart3, PieChart, Target, Settings } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, PieChart as RechartsPieChart, Cell, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, PieChart as RechartsPieChart, Cell, BarChart, Bar, Pie } from 'recharts';
 import HelpTooltip from './HelpTooltip';
 
 interface RoofElement {
