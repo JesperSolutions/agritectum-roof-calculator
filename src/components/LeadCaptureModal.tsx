@@ -49,6 +49,7 @@ const ROOF_TYPE_OPTIONS = [
 ];
 
 const TIMELINE_OPTIONS = [
+  'I don\'t know yet',
   'As soon as possible',
   '0-6 months',
   '6-12 months',
@@ -56,7 +57,7 @@ const TIMELINE_OPTIONS = [
 ];
 
 const BUDGET_OPTIONS = [
-  'Not sure yet',
+  'I don\'t know yet',
   'Under 50,000 DKK',
   '50,000–200,000 DKK',
   '200,000–500,000 DKK',

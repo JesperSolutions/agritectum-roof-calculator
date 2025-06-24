@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, ScatterChart, Scatter } from 'recharts';
 import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun, FileText, ToggleLeft, ToggleRight, Save, FolderOpen } from 'lucide-react';
 import LeadCaptureModal from './components/LeadCaptureModal';
 import LocationSelector from './components/LocationSelector';
@@ -111,14 +111,34 @@ export default function RoofImpactDashboard() {
     });
   }
 
-  const comparisonData = Object.entries(ROOF_TYPES).map(([name, typeData]) => ({
-    name,
-    co2Offset: typeData.co2 * roofSizeM2 + (includeSolar ? solarCo2PerYear : 0),
-    energySavings: typeData.energy * roofSizeM2 + (includeSolar ? solarEnergyPerYear : 0),
-    noxReduction: typeData.nox * roofSizeM2,
-    totalCost: typeData.totalCost * roofSizeM2 + (includeSolar ? solarCost : 0),
-    color: typeData.color
-  }));
+  // Fixed comparison data with proper cost-effectiveness calculations
+  const comparisonData = Object.entries(ROOF_TYPES).map(([name, typeData]) => {
+    const roofCo2 = typeData.co2 * roofSizeM2;
+    const solarCo2 = includeSolar ? solarCo2PerYear : 0;
+    const totalCo2Offset = roofCo2 + solarCo2;
+    
+    const roofCost = typeData.totalCost * roofSizeM2;
+    const totalCost = roofCost + (includeSolar ? solarCost : 0);
+    
+    // Calculate cost per kg of CO2 offset per year (cost effectiveness)
+    const costEffectiveness = totalCo2Offset > 0 ? totalCost / totalCo2Offset : 0;
+    
+    // Calculate 10-year CO2 offset for better comparison
+    const tenYearCo2Offset = totalCo2Offset * 10;
+    
+    return {
+      name: name.length > 15 ? name.substring(0, 15) + '...' : name,
+      fullName: name,
+      co2Offset: totalCo2Offset,
+      tenYearCo2: tenYearCo2Offset,
+      energySavings: typeData.energy * roofSizeM2 + (includeSolar ? solarEnergyPerYear : 0),
+      noxReduction: typeData.nox * roofSizeM2,
+      totalCost,
+      costEffectiveness: Math.round(costEffectiveness),
+      color: typeData.color,
+      isSelected: name === roofType
+    };
+  });
 
   // Calculator data for the modal
   const calculatorData = {
@@ -449,19 +469,70 @@ export default function RoofImpactDashboard() {
           location={location}
         />
 
-        {/* Original Comparison Chart */}
+        {/* Improved Cost-Effectiveness Comparison */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
           <div className="flex items-center space-x-3 mb-6">
             <Info className="w-6 h-6 text-blue-600" />
-            <h3 className="text-xl font-semibold text-gray-900">Cost vs CO₂ Impact Comparison</h3>
+            <h3 className="text-xl font-semibold text-gray-900">Cost-Effectiveness Analysis</h3>
+            <div className="text-sm text-gray-500">
+              (Lower cost per kg CO₂ = better value)
+            </div>
           </div>
-          <div className="h-80">
+          
+          {/* Summary Cards */}
+          <div className="grid md:grid-cols-3 gap-4 mb-8">
+            <div className="bg-green-50 rounded-lg p-4">
+              <h4 className="font-semibold text-green-900 mb-2">Most Cost-Effective</h4>
+              <div className="text-2xl font-bold text-green-700">
+                {comparisonData.reduce((min, item) => 
+                  item.costEffectiveness > 0 && (min.costEffectiveness === 0 || item.costEffectiveness < min.costEffectiveness) ? item : min
+                ).fullName}
+              </div>
+              <div className="text-sm text-green-600">
+                €{comparisonData.reduce((min, item) => 
+                  item.costEffectiveness > 0 && (min.costEffectiveness === 0 || item.costEffectiveness < min.costEffectiveness) ? item : min
+                ).costEffectiveness}/kg CO₂/year
+              </div>
+            </div>
+            
+            <div className="bg-blue-50 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-900 mb-2">Highest CO₂ Impact</h4>
+              <div className="text-2xl font-bold text-blue-700">
+                {comparisonData.reduce((max, item) => item.co2Offset > max.co2Offset ? item : max).fullName}
+              </div>
+              <div className="text-sm text-blue-600">
+                {comparisonData.reduce((max, item) => item.co2Offset > max.co2Offset ? item : max).co2Offset.toLocaleString()} kg/year
+              </div>
+            </div>
+            
+            <div className="bg-purple-50 rounded-lg p-4">
+              <h4 className="font-semibold text-purple-900 mb-2">Your Selection</h4>
+              <div className="text-2xl font-bold text-purple-700">
+                {roofType}
+              </div>
+              <div className="text-sm text-purple-600">
+                €{comparisonData.find(item => item.isSelected)?.costEffectiveness || 0}/kg CO₂/year
+              </div>
+            </div>
+          </div>
+
+          {/* Scatter Plot for Cost vs CO2 */}
+          <div className="h-96 mb-6">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={comparisonData}>
+              <ScatterChart data={comparisonData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" stroke="#666" angle={-45} textAnchor="end" height={80} />
-                <YAxis yAxisId="left" stroke="#666" />
-                <YAxis yAxisId="right" orientation="right" stroke="#666" />
+                <XAxis 
+                  dataKey="co2Offset" 
+                  stroke="#666" 
+                  name="Annual CO₂ Offset"
+                  label={{ value: 'Annual CO₂ Offset (kg)', position: 'insideBottom', offset: -10 }}
+                />
+                <YAxis 
+                  dataKey="totalCost" 
+                  stroke="#666" 
+                  name="Total Cost"
+                  label={{ value: 'Total Installation Cost (€)', angle: -90, position: 'insideLeft' }}
+                />
                 <Tooltip 
                   contentStyle={{ 
                     backgroundColor: 'white', 
@@ -470,24 +541,60 @@ export default function RoofImpactDashboard() {
                     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                   }}
                   formatter={(value: any, name: string) => [
-                    name === 'totalCost' ? `€${Number(value).toLocaleString()}` : `${Number(value).toLocaleString()} kg`,
+                    name === 'totalCost' ? `€${Number(value).toLocaleString()}` : `${Number(value).toLocaleString()} kg/year`,
                     name === 'co2Offset' ? 'Annual CO₂ Offset' : 'Total Installation Cost'
                   ]}
+                  labelFormatter={(label, payload) => {
+                    if (payload && payload[0]) {
+                      const data = payload[0].payload;
+                      return `${data.fullName} - Cost Effectiveness: €${data.costEffectiveness}/kg CO₂/year`;
+                    }
+                    return label;
+                  }}
                 />
-                <Bar 
-                  yAxisId="left"
-                  dataKey="co2Offset" 
-                  fill="#10b981"
-                  radius={[4, 4, 0, 0]}
-                  name="Annual CO₂ Offset"
-                />
-                <Bar 
-                  yAxisId="right"
+                <Scatter 
                   dataKey="totalCost" 
+                  fill={(entry: any) => entry.isSelected ? '#ef4444' : entry.color}
+                />
+                {comparisonData.map((entry, index) => (
+                  <Scatter
+                    key={index}
+                    data={[entry]}
+                    fill={entry.isSelected ? '#ef4444' : entry.color}
+                    shape={entry.isSelected ? 'star' : 'circle'}
+                  />
+                ))}
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Cost Effectiveness Bar Chart */}
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={comparisonData.filter(d => d.costEffectiveness > 0)}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="name" stroke="#666" angle={-45} textAnchor="end" height={80} />
+                <YAxis stroke="#666" label={{ value: 'Cost per kg CO₂ (€)', angle: -90, position: 'insideLeft' }} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'white', 
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value: any) => [`€${Number(value)}`, 'Cost per kg CO₂/year']}
+                  labelFormatter={(label, payload) => {
+                    if (payload && payload[0]) {
+                      return payload[0].payload.fullName;
+                    }
+                    return label;
+                  }}
+                />
+                <Bar 
+                  dataKey="costEffectiveness" 
                   fill="#3b82f6"
                   radius={[4, 4, 0, 0]}
-                  name="Total Installation Cost"
-                  opacity={0.7}
+                  name="Cost Effectiveness"
                 />
               </BarChart>
             </ResponsiveContainer>
