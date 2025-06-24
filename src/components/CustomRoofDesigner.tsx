@@ -984,6 +984,313 @@ export default function CustomRoofDesigner({ roofSize, location }: CustomRoofDes
         </div>
       )}
 
+      {/* Impact Analysis View */}
+      {activeView === 'analysis' && totalCoverage === 100 && (
+        <div className="space-y-6">
+          {/* Key Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
+              <div className="flex items-center justify-between mb-4">
+                <AlertTriangle className="w-8 h-8 opacity-80" />
+                <div className="text-right">
+                  <div className="text-2xl font-bold">
+                    {roofElements.reduce((sum, el) => sum + (el.percentage / 100) * roofSize * el.initialCo2PerM2, 0).toLocaleString()}
+                  </div>
+                  <div className="text-red-100 text-sm">kg CO₂</div>
+                </div>
+              </div>
+              <div className="text-red-100 text-sm">Initial Environmental Impact</div>
+            </div>
+
+            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+              <div className="flex items-center justify-between mb-4">
+                <Leaf className="w-8 h-8 opacity-80" />
+                <div className="text-right">
+                  <div className="text-2xl font-bold">
+                    {environmentalData.length > 0 ? (environmentalData[1]?.totalBenefits || 0).toLocaleString() : '0'}
+                  </div>
+                  <div className="text-green-100 text-sm">kg CO₂/year</div>
+                </div>
+              </div>
+              <div className="text-green-100 text-sm">Annual CO₂ Offset</div>
+            </div>
+
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+              <div className="flex items-center justify-between mb-4">
+                <Zap className="w-8 h-8 opacity-80" />
+                <div className="text-right">
+                  <div className="text-2xl font-bold">
+                    {environmentalData.length > 0 ? (environmentalData[1]?.annualEnergyGeneration || 0).toLocaleString() : '0'}
+                  </div>
+                  <div className="text-blue-100 text-sm">kWh/year</div>
+                </div>
+              </div>
+              <div className="text-blue-100 text-sm">Annual Energy Impact</div>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+              <div className="flex items-center justify-between mb-4">
+                <Target className="w-8 h-8 opacity-80" />
+                <div className="text-right">
+                  <div className="text-2xl font-bold">
+                    {breakEvenYear ? breakEvenYear : '∞'}
+                  </div>
+                  <div className="text-orange-100 text-sm">years</div>
+                </div>
+              </div>
+              <div className="text-orange-100 text-sm">Break-Even Point</div>
+            </div>
+          </div>
+
+          {/* Element Performance Breakdown */}
+          <div className="bg-gray-50 rounded-lg p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Annual Performance by Element</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {roofElements.filter(el => el.percentage > 0).map((element) => {
+                const area = (element.percentage / 100) * roofSize;
+                const annualCo2 = area * element.co2PerM2PerYear;
+                const annualEnergy = area * element.energyPerM2PerYear;
+                
+                return (
+                  <div key={element.id} className="bg-white rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div 
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: element.color }}
+                      />
+                      <span className="font-medium text-gray-900">{element.name}</span>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">CO₂ Offset:</span>
+                        <span className="font-medium text-green-600">{annualCo2.toFixed(0)} kg/year</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Energy:</span>
+                        <span className="font-medium text-blue-600">{annualEnergy.toFixed(0)} kWh/year</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Coverage:</span>
+                        <span className="font-medium">{element.percentage.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Environmental Metrics View */}
+      {activeView === 'environmental' && totalCoverage === 100 && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Environmental Impact Radar Chart */}
+            <div className="col-span-2 bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Environmental Impact Profile</h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={[
+                    {
+                      metric: 'CO₂ Offset',
+                      value: Math.min(100, (environmentalData[1]?.totalBenefits || 0) / 100),
+                      fullMark: 100
+                    },
+                    {
+                      metric: 'Energy Generation',
+                      value: Math.min(100, (environmentalData[1]?.annualEnergyGeneration || 0) / 200),
+                      fullMark: 100
+                    },
+                    {
+                      metric: 'Biodiversity',
+                      value: environmentalData[1]?.biodiversityIndex || 0,
+                      fullMark: 100
+                    },
+                    {
+                      metric: 'Stormwater Management',
+                      value: Math.min(100, (environmentalData[1]?.stormwaterManaged || 0) / roofSize * 100),
+                      fullMark: 100
+                    },
+                    {
+                      metric: 'Air Quality',
+                      value: Math.min(100, (environmentalData[1]?.airQualityImprovement || 0) / 100),
+                      fullMark: 100
+                    },
+                    {
+                      metric: 'Temperature Reduction',
+                      value: Math.min(100, (environmentalData[1]?.temperatureReduction || 0) * 10),
+                      fullMark: 100
+                    }
+                  ]}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="metric" />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                    <Radar
+                      name="Environmental Impact"
+                      dataKey="value"
+                      stroke="#10b981"
+                      fill="#10b981"
+                      fillOpacity={0.3}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Environmental Metrics Summary */}
+            <div className="space-y-4">
+              <div className="bg-green-50 rounded-lg p-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Droplets className="w-5 h-5 text-blue-600" />
+                  <span className="font-medium text-gray-900">Stormwater Management</span>
+                </div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {calculateStormwaterManagement().toFixed(0)} m²
+                </div>
+                <div className="text-sm text-gray-600">Annual retention capacity</div>
+              </div>
+
+              <div className="bg-orange-50 rounded-lg p-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Thermometer className="w-5 h-5 text-orange-600" />
+                  <span className="font-medium text-gray-900">Heat Island Reduction</span>
+                </div>
+                <div className="text-2xl font-bold text-orange-600">
+                  {calculateTemperatureReduction().toFixed(1)}°C
+                </div>
+                <div className="text-sm text-gray-600">Temperature reduction</div>
+              </div>
+
+              <div className="bg-purple-50 rounded-lg p-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Wind className="w-5 h-5 text-purple-600" />
+                  <span className="font-medium text-gray-900">Noise Reduction</span>
+                </div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {calculateNoiseReduction().toFixed(1)} dB
+                </div>
+                <div className="text-sm text-gray-600">Sound dampening</div>
+              </div>
+
+              <div className="bg-green-50 rounded-lg p-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Leaf className="w-5 h-5 text-green-600" />
+                  <span className="font-medium text-gray-900">Biodiversity Index</span>
+                </div>
+                <div className="text-2xl font-bold text-green-600">
+                  {calculateBiodiversityIndex(1).toFixed(0)}/100
+                </div>
+                <div className="text-sm text-gray-600">Ecosystem support</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Timeline View */}
+      {activeView === 'timeline' && totalCoverage === 100 && environmentalData.length > 0 && (
+        <div className="space-y-6">
+          <div className="h-96">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={environmentalData.slice(0, 26)}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="year" stroke="#666" />
+                <YAxis stroke="#666" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'white', 
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value: any, name: string) => [
+                    `${Number(value).toLocaleString()} kg`,
+                    name === 'cumulativeCo2Offset' ? 'Cumulative CO₂ Offset' : 
+                    name === 'netCo2Impact' ? 'Net CO₂ Impact' : name
+                  ]}
+                />
+                <Legend />
+                <Area 
+                  type="monotone" 
+                  dataKey="cumulativeCo2Offset" 
+                  stackId="1"
+                  stroke="#10b981" 
+                  fill="#10b981"
+                  fillOpacity={0.6}
+                  name="Cumulative CO₂ Offset"
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="netCo2Impact" 
+                  stackId="2"
+                  stroke="#ef4444" 
+                  fill="#ef4444"
+                  fillOpacity={0.6}
+                  name="Remaining CO₂ Debt"
+                />
+                {breakEvenYear && (
+                  <Line 
+                    type="monotone" 
+                    dataKey={() => 0}
+                    stroke="#000000"
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                    name="Break-Even Point"
+                  />
+                )}
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Element Contribution Over Time */}
+          <div className="h-96">
+            <h3 className="font-semibold text-gray-900 mb-4">Energy Generation by Element</h3>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={environmentalData.slice(0, 26)}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="year" stroke="#666" />
+                <YAxis stroke="#666" />
+                <Tooltip 
+                  formatter={(value: any, name: string) => [
+                    `${Number(value).toLocaleString()} kWh`,
+                    name
+                  ]}
+                />
+                <Legend />
+                <Area 
+                  type="monotone" 
+                  dataKey="solarGeneration" 
+                  stackId="1"
+                  stroke="#f59e0b" 
+                  fill="#f59e0b"
+                  fillOpacity={0.8}
+                  name="Solar Generation"
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="coolRoofSavings" 
+                  stackId="1"
+                  stroke="#6b7280" 
+                  fill="#6b7280"
+                  fillOpacity={0.8}
+                  name="Cool Roof Savings"
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="greenRoofBenefits" 
+                  stackId="1"
+                  stroke="#10b981" 
+                  fill="#10b981"
+                  fillOpacity={0.8}
+                  name="Green Roof Benefits"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
       {/* Risk Assessment View with Corrected Costs */}
       {activeView === 'risk' && (
         <div className="space-y-6">
@@ -1059,7 +1366,51 @@ export default function CustomRoofDesigner({ roofSize, location }: CustomRoofDes
         </div>
       )}
 
-      {/* Other views would continue with similar corrections... */}
+      {/* Optimization View */}
+      {activeView === 'optimization' && (
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6">
+            <h3 className="font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+              <Target className="w-5 h-5 text-purple-600" />
+              <span>Multi-Objective Optimization</span>
+            </h3>
+            
+            <div className="text-center py-12">
+              <Target className="w-16 h-16 mx-auto mb-4 text-purple-500" />
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">Advanced Optimization Coming Soon</h4>
+              <p className="text-gray-600 mb-6">
+                This feature will use multi-objective optimization algorithms to find the optimal roof configuration based on your priorities.
+              </p>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <h5 className="font-medium text-gray-900 mb-2">Maximize CO₂ Offset</h5>
+                  <p className="text-sm text-gray-600">Optimize for maximum environmental impact</p>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <h5 className="font-medium text-gray-900 mb-2">Minimize Cost</h5>
+                  <p className="text-sm text-gray-600">Find the most cost-effective solution</p>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <h5 className="font-medium text-gray-900 mb-2">Maximize Energy</h5>
+                  <p className="text-sm text-gray-600">Optimize for energy generation and savings</p>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <h5 className="font-medium text-gray-900 mb-2">Minimize Risk</h5>
+                  <p className="text-sm text-gray-600">Reduce installation and maintenance risks</p>
+                </div>
+              </div>
+              
+              <button
+                onClick={optimizeConfiguration}
+                className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              >
+                Request Early Access
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Warning for incomplete design */}
       {totalCoverage !== 100 && activeView !== 'design' && (
