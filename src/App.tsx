@@ -5,6 +5,7 @@ import LeadCaptureModal from './components/LeadCaptureModal';
 import LocationSelector from './components/LocationSelector';
 import ProjectManager from './components/ProjectManager';
 import EnhancedCharts from './components/EnhancedCharts';
+import SmartRecommendations from './components/SmartRecommendations';
 import HelpTooltip from './components/HelpTooltip';
 import { Project, LocationData, ROOF_TYPES } from './types/project';
 import { generateProjectId } from './utils/projectStorage';
@@ -174,6 +175,15 @@ export default function RoofImpactDashboard() {
     });
   };
 
+  const handleRecommendationApply = (recommendation: any) => {
+    if (recommendation.type === 'add_solar') {
+      setIncludeSolar(recommendation.data.includeSolar);
+    } else if (recommendation.type === 'change_roof_type') {
+      setRoofType(recommendation.data.roofType);
+    }
+    // Add more recommendation types as needed
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
       {/* Header */}
@@ -218,6 +228,18 @@ export default function RoofImpactDashboard() {
             onLocationChange={setLocation}
           />
         </div>
+
+        {/* Smart Recommendations */}
+        <SmartRecommendations
+          roofSize={roofSizeM2}
+          roofType={roofType}
+          includeSolar={includeSolar}
+          location={location}
+          totalCo2PerYear={totalCo2PerYear}
+          totalEnergyPerYear={totalEnergyPerYear}
+          totalInstallationCost={totalInstallationCost}
+          onRecommendationApply={handleRecommendationApply}
+        />
 
         {/* Controls Section */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
