@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
-import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun, FileText, ToggleLeft, ToggleRight, Save, FolderOpen } from 'lucide-react';
+import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun, FileText, ToggleLeft, ToggleRight, Save, FolderOpen, HelpCircle } from 'lucide-react';
 import LeadCaptureModal from './components/LeadCaptureModal';
 import LocationSelector from './components/LocationSelector';
 import ProjectManager from './components/ProjectManager';
 import EnhancedCharts from './components/EnhancedCharts';
+import HelpTooltip from './components/HelpTooltip';
 import { Project, LocationData, ROOF_TYPES } from './types/project';
 import { generateProjectId } from './utils/projectStorage';
 
@@ -198,6 +199,7 @@ export default function RoofImpactDashboard() {
           <div className="flex items-center space-x-3 mb-6">
             <FolderOpen className="w-6 h-6 text-purple-600" />
             <h2 className="text-xl font-semibold text-gray-900">Project Management</h2>
+            <HelpTooltip content="Save your current roof configuration as a project to compare different scenarios or return to later. You can manage multiple projects and track your progress through the decision-making process." />
           </div>
           <ProjectManager 
             currentProject={currentProject}
@@ -208,6 +210,9 @@ export default function RoofImpactDashboard() {
 
         {/* Location Selector */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+          <div className="flex items-center space-x-3 mb-4">
+            <HelpTooltip content="Location affects solar panel efficiency and climate-specific benefits. Enter your building's location to get more accurate calculations based on local solar irradiance, climate zone, and temperature ranges." />
+          </div>
           <LocationSelector 
             location={location}
             onLocationChange={setLocation}
@@ -219,15 +224,19 @@ export default function RoofImpactDashboard() {
           <div className="flex items-center space-x-3 mb-6">
             <Calculator className="w-6 h-6 text-green-600" />
             <h2 className="text-xl font-semibold text-gray-900">Roof For Good CO2, Impact Calculator.</h2>
+            <HelpTooltip content="Configure your roof specifications to calculate environmental impact, energy savings, and installation costs. Adjust the roof size, select the type of sustainable roofing solution, and optionally add solar panels for maximum benefit." />
           </div>
           
           <div className="grid md:grid-cols-2 gap-8">
             {/* Roof Size Input */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700">
-                  Estimated size of roof ({useMetric ? 'm²' : 'sq ft'})
-                </label>
+                <div className="flex items-center space-x-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Estimated size of roof ({useMetric ? 'm²' : 'sq ft'})
+                  </label>
+                  <HelpTooltip content="Enter the approximate size of your roof area. You can toggle between square meters (m²) and square feet (sq ft). Use the quick size buttons for common roof sizes, or enter a custom value." />
+                </div>
                 <button
                   onClick={handleUnitToggle}
                   className="flex items-center space-x-2 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm"
@@ -274,9 +283,12 @@ export default function RoofImpactDashboard() {
 
             {/* Roof Type Selection */}
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">
-                Roof Type
-              </label>
+              <div className="flex items-center space-x-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Roof Type
+                </label>
+                <HelpTooltip content="Choose from different sustainable roofing solutions. Each type offers different environmental benefits, costs, and lifespans. Photocatalytic coating reduces air pollution, cool roof coating saves energy, and green roofs provide insulation and biodiversity benefits." />
+              </div>
               <div className="grid grid-cols-1 gap-3">
                 {Object.entries(ROOF_TYPES).map(([type, typeData]) => (
                   <button
@@ -322,7 +334,10 @@ export default function RoofImpactDashboard() {
                   <Sun className="w-6 h-6 text-yellow-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Add Solar Panels</h3>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-lg font-semibold text-gray-900">Add Solar Panels</h3>
+                    <HelpTooltip content="Solar panels generate clean electricity and significantly increase your CO₂ offset. The system includes performance degradation over time and location-based efficiency adjustments. Installation cost is additional to the roof system." />
+                  </div>
                   <p className="text-sm text-gray-600">
                     Generate clean energy and increase CO₂ offset (+€{SOLAR_SPECS.costPerM2}/m²)
                   </p>
@@ -352,108 +367,154 @@ export default function RoofImpactDashboard() {
         </div>
 
         {/* Key Metrics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <Leaf className="w-8 h-8 opacity-80" />
-              <div className="text-right">
-                <div className="text-2xl font-bold">{totalCo2PerYear.toLocaleString()}</div>
-                <div className="text-green-100 text-sm">kg CO₂/year</div>
-              </div>
-            </div>
-            <div className="text-green-100 text-sm">
-              Carbon Offset Annual
-              {includeSolar && (
-                <div className="text-xs mt-1 opacity-80">
-                  (incl. {solarCo2PerYear.toLocaleString()} kg from solar)
-                </div>
-              )}
-            </div>
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+          <div className="flex items-center space-x-3 mb-6">
+            <TrendingUp className="w-6 h-6 text-green-600" />
+            <h2 className="text-xl font-semibold text-gray-900">Key Environmental & Financial Metrics</h2>
+            <HelpTooltip content="These metrics show the annual environmental impact and financial investment for your selected roof configuration. Values are calculated based on your roof size, type, location (if selected), and solar panel inclusion." />
           </div>
-
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <Zap className="w-8 h-8 opacity-80" />
-              <div className="text-right">
-                <div className="text-2xl font-bold">{totalEnergyPerYear.toLocaleString()}</div>
-                <div className="text-blue-100 text-sm">kWh/year</div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <Leaf className="w-8 h-8 opacity-80" />
+                  <HelpTooltip 
+                    content="Annual CO₂ offset from your roof system. This includes CO₂ absorbed or prevented by the roof coating/system plus CO₂ offset from solar energy generation (if included)." 
+                    iconColor="text-green-100"
+                  />
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold">{totalCo2PerYear.toLocaleString()}</div>
+                  <div className="text-green-100 text-sm">kg CO₂/year</div>
+                </div>
+              </div>
+              <div className="text-green-100 text-sm">
+                Carbon Offset Annual
+                {includeSolar && (
+                  <div className="text-xs mt-1 opacity-80">
+                    (incl. {solarCo2PerYear.toLocaleString()} kg from solar)
+                  </div>
+                )}
               </div>
             </div>
-            <div className="text-blue-100 text-sm">
-              {includeSolar ? 'Energy Generated + Saved' : 'Energy Savings'}
-              {includeSolar && (
-                <div className="text-xs mt-1 opacity-80">
-                  ({solarEnergyPerYear.toLocaleString()} kWh solar generation)
-                </div>
-              )}
-            </div>
-          </div>
 
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <Wind className="w-8 h-8 opacity-80" />
-              <div className="text-right">
-                <div className="text-2xl font-bold">{noxPerYear.toLocaleString()}</div>
-                <div className="text-purple-100 text-sm">kg NOₓ/year</div>
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <Zap className="w-8 h-8 opacity-80" />
+                  <HelpTooltip 
+                    content="Annual energy impact from your roof system. This includes energy savings from cooling effects (cool roofs) plus electricity generated by solar panels (if included)." 
+                    iconColor="text-blue-100"
+                  />
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold">{totalEnergyPerYear.toLocaleString()}</div>
+                  <div className="text-blue-100 text-sm">kWh/year</div>
+                </div>
+              </div>
+              <div className="text-blue-100 text-sm">
+                {includeSolar ? 'Energy Generated + Saved' : 'Energy Savings'}
+                {includeSolar && (
+                  <div className="text-xs mt-1 opacity-80">
+                    ({solarEnergyPerYear.toLocaleString()} kWh solar generation)
+                  </div>
+                )}
               </div>
             </div>
-            <div className="text-purple-100 text-sm">
-              Air Quality Improvement
-            </div>
-          </div>
 
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <Calendar className="w-8 h-8 opacity-80" />
-              <div className="text-right">
-                <div className="text-2xl font-bold">
-                  {neutralYear ? neutralYear : '∞'}
+            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <Wind className="w-8 h-8 opacity-80" />
+                  <HelpTooltip 
+                    content="Annual nitrogen oxide (NOₓ) reduction from photocatalytic coatings. NOₓ are harmful air pollutants that contribute to smog and respiratory problems. This metric shows how much cleaner air your roof creates." 
+                    iconColor="text-purple-100"
+                  />
                 </div>
-                <div className="text-orange-100 text-sm">years</div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold">{noxPerYear.toLocaleString()}</div>
+                  <div className="text-purple-100 text-sm">kg NOₓ/year</div>
+                </div>
+              </div>
+              <div className="text-purple-100 text-sm">
+                Air Quality Improvement
               </div>
             </div>
-            <div className="text-orange-100 text-sm">
-              Carbon Neutral Timeline
-            </div>
-          </div>
 
-          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <Euro className="w-8 h-8 opacity-80" />
-              <div className="text-right">
-                <div className="text-2xl font-bold">
-                  €{totalInstallationCost.toLocaleString()}
+            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <Calendar className="w-8 h-8 opacity-80" />
+                  <HelpTooltip 
+                    content="Time it takes for your roof to offset its initial carbon footprint from manufacturing and installation. This is when your roof becomes carbon-neutral and starts providing net environmental benefits." 
+                    iconColor="text-orange-100"
+                  />
                 </div>
-                <div className="text-emerald-100 text-sm">total cost</div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold">
+                    {neutralYear ? neutralYear : '∞'}
+                  </div>
+                  <div className="text-orange-100 text-sm">years</div>
+                </div>
+              </div>
+              <div className="text-orange-100 text-sm">
+                Carbon Neutral Timeline
               </div>
             </div>
-            <div className="text-emerald-100 text-sm">
-              Installation Investment
-              {includeSolar && (
-                <div className="text-xs mt-1 opacity-80">
-                  (incl. €{solarCost.toLocaleString()} solar)
+
+            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <Euro className="w-8 h-8 opacity-80" />
+                  <HelpTooltip 
+                    content="Total upfront investment including materials, labor, and installation for your selected roof system and solar panels (if included). This is a one-time cost that provides benefits over the system's entire lifespan." 
+                    iconColor="text-emerald-100"
+                  />
                 </div>
-              )}
+                <div className="text-right">
+                  <div className="text-2xl font-bold">
+                    €{totalInstallationCost.toLocaleString()}
+                  </div>
+                  <div className="text-emerald-100 text-sm">total cost</div>
+                </div>
+              </div>
+              <div className="text-emerald-100 text-sm">
+                Installation Investment
+                {includeSolar && (
+                  <div className="text-xs mt-1 opacity-80">
+                    (incl. €{solarCost.toLocaleString()} solar)
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Enhanced Charts Section */}
-        <EnhancedCharts 
-          chartData={chartData}
-          roofType={roofType}
-          includeSolar={includeSolar}
-          totalCo2PerYear={totalCo2PerYear}
-          totalEnergyPerYear={totalEnergyPerYear}
-          noxPerYear={noxPerYear}
-          location={location}
-        />
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+          <div className="flex items-center space-x-3 mb-6">
+            <TrendingUp className="w-6 h-6 text-blue-600" />
+            <h2 className="text-xl font-semibold text-gray-900">Long-term Impact Analysis</h2>
+            <HelpTooltip content="Detailed charts showing how your roof's environmental impact evolves over time. View 50-year projections, monthly breakdowns, seasonal variations, and comprehensive impact analysis with multiple visualization options." />
+          </div>
+          <EnhancedCharts 
+            chartData={chartData}
+            roofType={roofType}
+            includeSolar={includeSolar}
+            totalCo2PerYear={totalCo2PerYear}
+            totalEnergyPerYear={totalEnergyPerYear}
+            noxPerYear={noxPerYear}
+            location={location}
+          />
+        </div>
 
         {/* Simple Comparison Chart */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
           <div className="flex items-center space-x-3 mb-6">
             <Info className="w-6 h-6 text-blue-600" />
             <h3 className="text-xl font-semibold text-gray-900">Roof Type Comparison</h3>
+            <HelpTooltip content="Compare all available roof types side by side. Green bars show annual CO₂ offset (environmental benefit), while blue bars show total installation cost. This helps you choose the best option for your priorities and budget." />
           </div>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -518,12 +579,18 @@ export default function RoofImpactDashboard() {
 
         {/* Detailed Information */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6">Comprehensive Analysis</h3>
+          <div className="flex items-center space-x-3 mb-6">
+            <h3 className="text-xl font-semibold text-gray-900">Comprehensive Analysis</h3>
+            <HelpTooltip content="Detailed breakdown of all calculations, costs, and technical specifications for your selected roof configuration. This section provides transparency into how all metrics are calculated and what maintenance requirements you can expect." />
+          </div>
           
           <div className="grid md:grid-cols-3 gap-8">
             <div className="space-y-6">
               <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Environmental Impact</h4>
+                <div className="flex items-center space-x-2 mb-3">
+                  <h4 className="font-semibold text-gray-900">Environmental Impact</h4>
+                  <HelpTooltip content="Complete environmental impact analysis including initial carbon footprint from manufacturing, annual benefits, and long-term projections over 50 years." />
+                </div>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
                     <span className="text-gray-700">Initial CO₂ Footprint</span>
@@ -553,7 +620,10 @@ export default function RoofImpactDashboard() {
 
             <div className="space-y-6">
               <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Cost Analysis</h4>
+                <div className="flex items-center space-x-2 mb-3">
+                  <h4 className="font-semibold text-gray-900">Cost Analysis</h4>
+                  <HelpTooltip content="Complete cost breakdown including materials, labor, installation time, and potential energy savings value. All costs are upfront investments with benefits realized over the system lifespan." />
+                </div>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-emerald-50 rounded-lg">
                     <span className="text-gray-700">Roof Installation Cost</span>
@@ -585,7 +655,10 @@ export default function RoofImpactDashboard() {
 
             <div className="space-y-6">
               <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Technical Specifications</h4>
+                <div className="flex items-center space-x-2 mb-3">
+                  <h4 className="font-semibold text-gray-900">Technical Specifications</h4>
+                  <HelpTooltip content="Technical details about system performance, lifespan, installation rates, and maintenance requirements. These specifications help you understand what to expect from your chosen roof system." />
+                </div>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-700">Roof System Lifespan</span>
@@ -627,7 +700,10 @@ export default function RoofImpactDashboard() {
           </div>
 
           <div className="mt-8">
-            <h4 className="font-semibold text-gray-900 mb-3">Maintenance Requirements</h4>
+            <div className="flex items-center space-x-2 mb-3">
+              <h4 className="font-semibold text-gray-900">Maintenance Requirements</h4>
+              <HelpTooltip content="Ongoing maintenance requirements to ensure optimal performance throughout the system lifespan. Regular maintenance preserves environmental benefits and extends system life." />
+            </div>
             <div className="space-y-3">
               <div className="p-4 bg-blue-50 rounded-lg">
                 <p className="text-gray-700 text-sm leading-relaxed"><strong>Roof System:</strong> {data.maintenance}</p>
