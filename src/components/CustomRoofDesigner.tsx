@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Leaf, Zap, Wind, Sun, Calculator, TrendingUp, AlertTriangle, CheckCircle, Info, BarChart3, PieChart, Target, Settings, Droplets, Thermometer, Shield, Award, Clock, DollarSign, Activity, Layers, MapPin, Calendar, Download, Share2, RefreshCw, Maximize2, Eye, EyeOff, Save } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, PieChart as RechartsPieChart, Cell, BarChart, Bar, Pie, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ComposedChart } from 'recharts';
+import { Leaf, Zap, Wind, Sun, Calculator, TrendingUp, AlertTriangle, CheckCircle, Info, BarChart3, PieChart, Target, Settings, Menu, X, ChevronDown, ChevronUp, Maximize2, Minimize2 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, PieChart as RechartsPieChart, Cell, BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import HelpTooltip from './HelpTooltip';
 
 interface RoofElement {
@@ -18,31 +18,6 @@ interface RoofElement {
   description: string;
   synergies: string[];
   conflicts: string[];
-  // Enhanced properties
-  thermalPerformance: number; // R-value or thermal resistance
-  stormwaterRetention: number; // Percentage of rainfall retained
-  noiseReduction: number; // Decibel reduction
-  fireResistance: 'low' | 'medium' | 'high';
-  windResistance: number; // Wind speed resistance in km/h
-  installationComplexity: 'simple' | 'moderate' | 'complex';
-  weatherDependency: 'low' | 'medium' | 'high';
-  structuralRequirements: {
-    additionalLoad: number; // kg/m²
-    reinforcementNeeded: boolean;
-    accessRequirements: string[];
-  };
-  environmentalBenefits: {
-    biodiversityScore: number; // 0-100
-    airPurification: number; // m³ air cleaned per m² per day
-    carbonSequestration: number; // kg CO2 stored per m² (for green roofs)
-    heatIslandReduction: number; // Temperature reduction in °C
-  };
-  seasonalVariation: {
-    spring: number;
-    summer: number;
-    autumn: number;
-    winter: number;
-  };
 }
 
 interface EnvironmentalData {
@@ -57,31 +32,6 @@ interface EnvironmentalData {
   noxTreatment: number;
   totalBenefits: number;
   maintenanceCosts: number;
-  // Enhanced metrics
-  stormwaterManaged: number;
-  temperatureReduction: number;
-  noiseReduction: number;
-  biodiversityIndex: number;
-  airQualityImprovement: number;
-  structuralStress: number;
-  weatherRiskFactor: number;
-}
-
-interface WeatherImpact {
-  temperature: number;
-  rainfall: number;
-  windSpeed: number;
-  solarHours: number;
-  humidity: number;
-}
-
-interface RiskAssessment {
-  category: string;
-  level: 'low' | 'medium' | 'high' | 'critical';
-  probability: number;
-  impact: string;
-  mitigation: string[];
-  cost: number;
 }
 
 interface CustomRoofDesignerProps {
@@ -93,127 +43,54 @@ interface CustomRoofDesignerProps {
   };
 }
 
-// CORRECTED ROOF ELEMENTS with realistic industry-standard costs and specifications
-const ENHANCED_ROOF_ELEMENTS: RoofElement[] = [
+const ROOF_ELEMENTS: RoofElement[] = [
   {
     id: 'solar',
     name: 'Solar Panels',
     percentage: 0,
     color: '#f59e0b',
-    co2PerM2PerYear: 80, // Realistic CO2 offset from solar generation
-    energyPerM2PerYear: 180, // Adjusted to realistic 180 kWh/m²/year for residential panels
+    co2PerM2PerYear: 80,
+    energyPerM2PerYear: 200,
     noxPerM2PerYear: 0,
-    initialCo2PerM2: 45, // Manufacturing footprint
-    costPerM2: 180, // Realistic cost including panels, inverters, installation (€150-220/m²)
+    initialCo2PerM2: 45,
+    costPerM2: 150,
     lifespan: 25,
-    maintenancePerM2PerYear: 3, // Realistic maintenance cost
+    maintenancePerM2PerYear: 2,
     description: 'Photovoltaic panels generating clean electricity',
-    synergies: ['Enhanced cooling from white roof underneath', 'Optimal performance with proper ventilation'],
-    conflicts: ['Shading affects other elements', 'Requires structural reinforcement'],
-    thermalPerformance: 0.5,
-    stormwaterRetention: 0,
-    noiseReduction: 2,
-    fireResistance: 'medium',
-    windResistance: 150,
-    installationComplexity: 'moderate',
-    weatherDependency: 'high',
-    structuralRequirements: {
-      additionalLoad: 20, // Realistic load for modern panels
-      reinforcementNeeded: true,
-      accessRequirements: ['Electrical access', 'Crane access', 'Safety anchors']
-    },
-    environmentalBenefits: {
-      biodiversityScore: 5,
-      airPurification: 0,
-      carbonSequestration: 0,
-      heatIslandReduction: 1
-    },
-    seasonalVariation: {
-      spring: 0.8,
-      summer: 1.2,
-      autumn: 0.7,
-      winter: 0.3
-    }
+    synergies: ['Can be combined with green roof substrate', 'Enhanced cooling from white roof underneath'],
+    conflicts: ['Reduces available space for other elements', 'Shading affects green roof growth underneath']
   },
   {
     id: 'green',
     name: 'Green Roof',
     percentage: 0,
     color: '#10b981',
-    co2PerM2PerYear: 2.1, // Realistic CO2 sequestration
-    energyPerM2PerYear: 15, // Energy savings from insulation
+    co2PerM2PerYear: 2.1,
+    energyPerM2PerYear: 15,
     noxPerM2PerYear: 0.05,
     initialCo2PerM2: 8,
-    costPerM2: 85, // Realistic extensive green roof cost (€70-120/m²)
+    costPerM2: 45,
     lifespan: 40,
-    maintenancePerM2PerYear: 4, // Higher maintenance for green systems
+    maintenancePerM2PerYear: 3,
     description: 'Living vegetation providing insulation and biodiversity',
-    synergies: ['Natural cooling enhances solar efficiency', 'Excellent stormwater management'],
-    conflicts: ['High structural load', 'Complex maintenance requirements'],
-    thermalPerformance: 3.5,
-    stormwaterRetention: 85,
-    noiseReduction: 15,
-    fireResistance: 'low',
-    windResistance: 120,
-    installationComplexity: 'complex',
-    weatherDependency: 'medium',
-    structuralRequirements: {
-      additionalLoad: 120, // Realistic load for extensive green roof
-      reinforcementNeeded: true,
-      accessRequirements: ['Drainage systems', 'Irrigation access', 'Maintenance walkways']
-    },
-    environmentalBenefits: {
-      biodiversityScore: 95,
-      airPurification: 50,
-      carbonSequestration: 5,
-      heatIslandReduction: 8
-    },
-    seasonalVariation: {
-      spring: 1.2,
-      summer: 1.0,
-      autumn: 0.8,
-      winter: 0.6
-    }
+    synergies: ['Natural cooling enhances solar panel efficiency', 'Stormwater management benefits'],
+    conflicts: ['Requires structural reinforcement', 'Higher maintenance needs']
   },
   {
     id: 'white',
     name: 'White Cool Roof',
     percentage: 0,
     color: '#6b7280',
-    co2PerM2PerYear: 6.65, // From energy savings
-    energyPerM2PerYear: 25, // Realistic cooling energy savings
+    co2PerM2PerYear: 6.65,
+    energyPerM2PerYear: 25,
     noxPerM2PerYear: 0.02,
     initialCo2PerM2: 3,
-    costPerM2: 35, // Realistic cool roof coating cost (€25-45/m²)
+    costPerM2: 55,
     lifespan: 20,
     maintenancePerM2PerYear: 1.5,
     description: 'Highly reflective coating reducing heat absorption',
-    synergies: ['Excellent base for other elements', 'Enhances NOx treatment'],
-    conflicts: ['Potential glare issues', 'Requires regular cleaning'],
-    thermalPerformance: 2.0,
-    stormwaterRetention: 10,
-    noiseReduction: 3,
-    fireResistance: 'high',
-    windResistance: 180,
-    installationComplexity: 'simple',
-    weatherDependency: 'low',
-    structuralRequirements: {
-      additionalLoad: 2,
-      reinforcementNeeded: false,
-      accessRequirements: ['Surface preparation', 'Weather protection']
-    },
-    environmentalBenefits: {
-      biodiversityScore: 10,
-      airPurification: 5,
-      carbonSequestration: 0,
-      heatIslandReduction: 12
-    },
-    seasonalVariation: {
-      spring: 0.9,
-      summer: 1.3,
-      autumn: 1.0,
-      winter: 0.8
-    }
+    synergies: ['Excellent base for solar panels', 'Enhances NOx treatment effectiveness'],
+    conflicts: ['May cause glare issues', 'Requires regular cleaning for effectiveness']
   },
   {
     id: 'nox',
@@ -224,70 +101,58 @@ const ENHANCED_ROOF_ELEMENTS: RoofElement[] = [
     energyPerM2PerYear: 0,
     noxPerM2PerYear: 0.1,
     initialCo2PerM2: 2,
-    costPerM2: 18, // Realistic photocatalytic coating cost (€15-25/m²)
+    costPerM2: 12,
     lifespan: 15,
-    maintenancePerM2PerYear: 0.8, // Slightly higher for reapplication
+    maintenancePerM2PerYear: 0.5,
     description: 'Photocatalytic coating breaking down air pollutants',
-    synergies: ['Works excellently with white roof base', 'Enhanced by UV exposure'],
-    conflicts: ['Reduced effectiveness in shade', 'Requires UV activation'],
-    thermalPerformance: 0.1,
-    stormwaterRetention: 5,
-    noiseReduction: 1,
-    fireResistance: 'medium',
-    windResistance: 160,
-    installationComplexity: 'simple',
-    weatherDependency: 'medium',
-    structuralRequirements: {
-      additionalLoad: 1,
-      reinforcementNeeded: false,
-      accessRequirements: ['Surface preparation', 'UV exposure verification']
-    },
-    environmentalBenefits: {
-      biodiversityScore: 15,
-      airPurification: 80,
-      carbonSequestration: 0,
-      heatIslandReduction: 2
-    },
-    seasonalVariation: {
-      spring: 1.0,
-      summer: 1.2,
-      autumn: 0.9,
-      winter: 0.6
-    }
+    synergies: ['Can be applied over white roof coating', 'Works well in high-traffic areas'],
+    conflicts: ['Effectiveness reduced by shading', 'Requires UV light activation']
   }
 ];
 
-const WEATHER_SCENARIOS = {
-  mild: { temperature: 15, rainfall: 600, windSpeed: 20, solarHours: 1400, humidity: 70 },
-  moderate: { temperature: 20, rainfall: 800, windSpeed: 30, solarHours: 1600, humidity: 65 },
-  harsh: { temperature: 25, rainfall: 1200, windSpeed: 50, solarHours: 1800, humidity: 80 }
-};
-
 export default function CustomRoofDesigner({ roofSize, location }: CustomRoofDesignerProps) {
-  const [roofElements, setRoofElements] = useState<RoofElement[]>(ENHANCED_ROOF_ELEMENTS);
+  const [roofElements, setRoofElements] = useState<RoofElement[]>(ROOF_ELEMENTS);
   const [environmentalData, setEnvironmentalData] = useState<EnvironmentalData[]>([]);
   const [breakEvenYear, setBreakEvenYear] = useState<number | null>(null);
   const [totalCoverage, setTotalCoverage] = useState(0);
   const [conflicts, setConflicts] = useState<string[]>([]);
   const [synergies, setSynergies] = useState<string[]>([]);
-  const [riskAssessments, setRiskAssessments] = useState<RiskAssessment[]>([]);
-  const [weatherScenario, setWeatherScenario] = useState<keyof typeof WEATHER_SCENARIOS>('moderate');
-  const [activeView, setActiveView] = useState<'design' | 'analysis' | 'timeline' | 'breakdown' | 'environmental' | 'risk' | 'optimization'>('design');
-  const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);
-  const [selectedElement, setSelectedElement] = useState<string | null>(null);
-  const [comparisonMode, setComparisonMode] = useState(false);
-  const [savedConfigurations, setSavedConfigurations] = useState<any[]>([]);
+  const [activeView, setActiveView] = useState<'design' | 'analysis' | 'timeline' | 'breakdown' | 'metrics' | 'optimization'>('design');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [expandedElements, setExpandedElements] = useState<string[]>([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
 
   useEffect(() => {
     const total = roofElements.reduce((sum, element) => sum + element.percentage, 0);
     setTotalCoverage(total);
     
     if (total === 100) {
-      calculateEnhancedEnvironmentalImpact();
+      calculateEnvironmentalImpact();
       analyzeInteractions();
-      performRiskAssessment();
     }
-  }, [roofElements, roofSize, location, weatherScenario]);
+  }, [roofElements, roofSize, location]);
+
+  // Touch gesture handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartY(e.touches[0].clientY);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartY) return;
+    
+    const touchEndY = e.touches[0].clientY;
+    const diff = touchStartY - touchEndY;
+    
+    // Prevent default scrolling on certain gestures
+    if (Math.abs(diff) > 50) {
+      e.preventDefault();
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setTouchStartY(null);
+  };
 
   const updateElementPercentage = (id: string, percentage: number) => {
     setRoofElements(prev => prev.map(element => 
@@ -295,7 +160,31 @@ export default function CustomRoofDesigner({ roofSize, location }: CustomRoofDes
     ));
   };
 
-  const calculateEnhancedEnvironmentalImpact = () => {
+  const autoBalance = () => {
+    const activeElements = roofElements.filter(el => el.percentage > 0);
+    if (activeElements.length === 0) return;
+
+    const remainingPercentage = 100 - totalCoverage;
+    const adjustmentPerElement = remainingPercentage / activeElements.length;
+
+    setRoofElements(prev => prev.map(element => {
+      if (element.percentage > 0) {
+        const newPercentage = Math.max(0, Math.min(100, element.percentage + adjustmentPerElement));
+        return { ...element, percentage: Math.round(newPercentage * 10) / 10 };
+      }
+      return element;
+    }));
+  };
+
+  const toggleElementExpansion = (id: string) => {
+    setExpandedElements(prev => 
+      prev.includes(id) 
+        ? prev.filter(elementId => elementId !== id)
+        : [...prev, id]
+    );
+  };
+
+  const calculateEnvironmentalImpact = () => {
     const data: EnvironmentalData[] = [];
     let cumulativeCo2Offset = 0;
     
@@ -303,26 +192,11 @@ export default function CustomRoofDesigner({ roofSize, location }: CustomRoofDes
       sum + (element.percentage / 100) * roofSize * element.initialCo2PerM2, 0
     );
 
-    const weather = WEATHER_SCENARIOS[weatherScenario];
-
     for (let year = 0; year <= 50; year++) {
-      const seasonalMultiplier = getCurrentSeasonalMultiplier(year);
-      const weatherImpactFactor = calculateWeatherImpact(weather, year);
-      
-      // Enhanced calculations with weather and seasonal factors
-      const solarGeneration = calculateEnhancedSolarBenefits(year, seasonalMultiplier, weatherImpactFactor);
-      const greenRoofBenefits = calculateEnhancedGreenRoofBenefits(year, seasonalMultiplier, weatherImpactFactor);
-      const coolRoofSavings = calculateEnhancedCoolRoofBenefits(year, seasonalMultiplier, weatherImpactFactor);
-      const noxTreatment = calculateEnhancedNoxBenefits(year, seasonalMultiplier, weatherImpactFactor);
-
-      // Environmental metrics
-      const stormwaterManaged = calculateStormwaterManagement();
-      const temperatureReduction = calculateTemperatureReduction();
-      const noiseReduction = calculateNoiseReduction();
-      const biodiversityIndex = calculateBiodiversityIndex(year);
-      const airQualityImprovement = calculateAirQualityImprovement();
-      const structuralStress = calculateStructuralStress();
-      const weatherRiskFactor = calculateWeatherRiskFactor(weather);
+      const solarGeneration = calculateSolarBenefits(year);
+      const greenRoofBenefits = calculateGreenRoofBenefits(year);
+      const coolRoofSavings = calculateCoolRoofBenefits(year);
+      const noxTreatment = calculateNoxBenefits(year);
 
       const totalAnnualCo2Offset = solarGeneration.co2 + greenRoofBenefits.co2 + 
                                    coolRoofSavings.co2 + noxTreatment.co2;
@@ -350,14 +224,7 @@ export default function CustomRoofDesigner({ roofSize, location }: CustomRoofDes
         coolRoofSavings: coolRoofSavings.energy,
         noxTreatment: noxTreatment.co2,
         totalBenefits: totalAnnualCo2Offset,
-        maintenanceCosts,
-        stormwaterManaged,
-        temperatureReduction,
-        noiseReduction,
-        biodiversityIndex,
-        airQualityImprovement,
-        structuralStress,
-        weatherRiskFactor
+        maintenanceCosts
       });
 
       if (netCo2Impact <= 0 && !breakEvenYear) {
@@ -368,28 +235,7 @@ export default function CustomRoofDesigner({ roofSize, location }: CustomRoofDes
     setEnvironmentalData(data);
   };
 
-  const getCurrentSeasonalMultiplier = (year: number): number => {
-    const month = (year * 12) % 12;
-    if (month >= 2 && month <= 4) return 1.0; // Spring
-    if (month >= 5 && month <= 7) return 1.2; // Summer
-    if (month >= 8 && month <= 10) return 0.9; // Autumn
-    return 0.7; // Winter
-  };
-
-  const calculateWeatherImpact = (weather: WeatherImpact, year: number): number => {
-    // Climate change factor - temperatures increasing over time
-    const climateChangeFactor = 1 + (year * 0.002); // 0.2% increase per year
-    const adjustedTemp = weather.temperature * climateChangeFactor;
-    
-    // Weather impact on performance (simplified model)
-    const tempImpact = Math.max(0.7, 1 - Math.abs(adjustedTemp - 20) * 0.02);
-    const rainImpact = Math.min(1.2, 0.8 + weather.rainfall / 1000);
-    const windImpact = Math.max(0.8, 1 - weather.windSpeed / 200);
-    
-    return (tempImpact + rainImpact + windImpact) / 3;
-  };
-
-  const calculateEnhancedSolarBenefits = (year: number, seasonalMultiplier: number, weatherImpact: number) => {
+  const calculateSolarBenefits = (year: number) => {
     const solarElement = roofElements.find(el => el.id === 'solar');
     if (!solarElement || solarElement.percentage === 0 || year > solarElement.lifespan) {
       return { co2: 0, energy: 0, nox: 0 };
@@ -399,15 +245,13 @@ export default function CustomRoofDesigner({ roofSize, location }: CustomRoofDes
     const locationMultiplier = location ? (location.solarIrradiance / 1100) : 1;
     const degradationFactor = Math.pow(0.995, year);
     
-    // Enhanced calculation with weather and seasonal factors
-    const energy = area * solarElement.energyPerM2PerYear * locationMultiplier * 
-                   degradationFactor * seasonalMultiplier * weatherImpact;
+    const energy = area * solarElement.energyPerM2PerYear * locationMultiplier * degradationFactor;
     const co2 = energy * 0.4;
 
     return { co2, energy, nox: 0 };
   };
 
-  const calculateEnhancedGreenRoofBenefits = (year: number, seasonalMultiplier: number, weatherImpact: number) => {
+  const calculateGreenRoofBenefits = (year: number) => {
     const greenElement = roofElements.find(el => el.id === 'green');
     if (!greenElement || greenElement.percentage === 0 || year > greenElement.lifespan) {
       return { co2: 0, energy: 0, nox: 0 };
@@ -416,17 +260,14 @@ export default function CustomRoofDesigner({ roofSize, location }: CustomRoofDes
     const area = (greenElement.percentage / 100) * roofSize;
     const maturityFactor = Math.min(1, year / 3);
     
-    // Enhanced with seasonal and weather factors
-    const performanceFactor = maturityFactor * seasonalMultiplier * weatherImpact;
-    
     return {
-      co2: area * greenElement.co2PerM2PerYear * performanceFactor,
-      energy: area * greenElement.energyPerM2PerYear * performanceFactor,
-      nox: area * greenElement.noxPerM2PerYear * performanceFactor
+      co2: area * greenElement.co2PerM2PerYear * maturityFactor,
+      energy: area * greenElement.energyPerM2PerYear * maturityFactor,
+      nox: area * greenElement.noxPerM2PerYear * maturityFactor
     };
   };
 
-  const calculateEnhancedCoolRoofBenefits = (year: number, seasonalMultiplier: number, weatherImpact: number) => {
+  const calculateCoolRoofBenefits = (year: number) => {
     const coolElement = roofElements.find(el => el.id === 'white');
     if (!coolElement || coolElement.percentage === 0 || year > coolElement.lifespan) {
       return { co2: 0, energy: 0, nox: 0 };
@@ -437,136 +278,27 @@ export default function CustomRoofDesigner({ roofSize, location }: CustomRoofDes
       (location.temperatureRange.max > 25 ? 1.2 : 
        location.temperatureRange.max > 20 ? 1.0 : 0.8) : 1.0;
     
-    const performanceFactor = seasonalMultiplier * weatherImpact * climateMultiplier;
-    
     return {
-      co2: area * coolElement.co2PerM2PerYear * performanceFactor,
-      energy: area * coolElement.energyPerM2PerYear * performanceFactor,
-      nox: area * coolElement.noxPerM2PerYear * performanceFactor
+      co2: area * coolElement.co2PerM2PerYear * climateMultiplier,
+      energy: area * coolElement.energyPerM2PerYear * climateMultiplier,
+      nox: area * coolElement.noxPerM2PerYear
     };
   };
 
-  const calculateEnhancedNoxBenefits = (year: number, seasonalMultiplier: number, weatherImpact: number) => {
+  const calculateNoxBenefits = (year: number) => {
     const noxElement = roofElements.find(el => el.id === 'nox');
     if (!noxElement || noxElement.percentage === 0 || year > noxElement.lifespan) {
       return { co2: 0, energy: 0, nox: 0 };
     }
 
     const area = (noxElement.percentage / 100) * roofSize;
-    const reapplicationCycle = Math.floor(year / 2);
-    const effectivenessFactor = (year % 2 === 0 ? 1.0 : 0.7) * seasonalMultiplier * weatherImpact;
+    const effectivenessFactor = year % 2 === 0 ? 1.0 : 0.7;
     
     return {
       co2: area * noxElement.co2PerM2PerYear * effectivenessFactor,
       energy: 0,
       nox: area * noxElement.noxPerM2PerYear * effectivenessFactor
     };
-  };
-
-  // Enhanced environmental calculations
-  const calculateStormwaterManagement = (): number => {
-    return roofElements.reduce((total, element) => {
-      const area = (element.percentage / 100) * roofSize;
-      return total + (area * element.stormwaterRetention / 100);
-    }, 0);
-  };
-
-  const calculateTemperatureReduction = (): number => {
-    return roofElements.reduce((total, element) => {
-      const area = (element.percentage / 100) * roofSize;
-      return total + (area * element.environmentalBenefits.heatIslandReduction / roofSize);
-    }, 0);
-  };
-
-  const calculateNoiseReduction = (): number => {
-    return roofElements.reduce((total, element) => {
-      const area = (element.percentage / 100) * roofSize;
-      return total + (area * element.noiseReduction / roofSize);
-    }, 0);
-  };
-
-  const calculateBiodiversityIndex = (year: number): number => {
-    const baseScore = roofElements.reduce((total, element) => {
-      const area = (element.percentage / 100) * roofSize;
-      return total + (area * element.environmentalBenefits.biodiversityScore / roofSize);
-    }, 0);
-    
-    // Biodiversity improves over time for green elements
-    const maturityBonus = Math.min(20, year * 2);
-    return Math.min(100, baseScore + maturityBonus);
-  };
-
-  const calculateAirQualityImprovement = (): number => {
-    return roofElements.reduce((total, element) => {
-      const area = (element.percentage / 100) * roofSize;
-      return total + (area * element.environmentalBenefits.airPurification);
-    }, 0);
-  };
-
-  const calculateStructuralStress = (): number => {
-    return roofElements.reduce((total, element) => {
-      const area = (element.percentage / 100) * roofSize;
-      return total + (area * element.structuralRequirements.additionalLoad);
-    }, 0);
-  };
-
-  const calculateWeatherRiskFactor = (weather: WeatherImpact): number => {
-    const tempRisk = Math.abs(weather.temperature - 20) / 20;
-    const windRisk = weather.windSpeed / 100;
-    const rainRisk = Math.max(0, (weather.rainfall - 800) / 800);
-    
-    return (tempRisk + windRisk + rainRisk) / 3;
-  };
-
-  // CORRECTED RISK ASSESSMENT with realistic costs
-  const performRiskAssessment = () => {
-    const risks: RiskAssessment[] = [];
-    
-    // Structural risk assessment with realistic costs
-    const totalLoad = calculateStructuralStress();
-    if (totalLoad > 100) {
-      const structuralCost = Math.min(25000, totalLoad * 15); // Cap at €25k, realistic €10-20/kg load
-      risks.push({
-        category: 'Structural',
-        level: totalLoad > 200 ? 'critical' : 'high',
-        probability: Math.min(90, totalLoad / 3),
-        impact: 'Building structural integrity may be compromised',
-        mitigation: ['Structural engineering assessment (€2,000-5,000)', 'Reinforcement installation if needed', 'Load distribution systems'],
-        cost: structuralCost
-      });
-    }
-
-    // Weather risk assessment with realistic costs
-    const weatherRisk = calculateWeatherRiskFactor(WEATHER_SCENARIOS[weatherScenario]);
-    if (weatherRisk > 0.3) {
-      const weatherCost = Math.min(15000, weatherRisk * roofSize * 5); // Realistic weather protection costs
-      risks.push({
-        category: 'Weather',
-        level: weatherRisk > 0.6 ? 'high' : 'medium',
-        probability: weatherRisk * 100,
-        impact: 'Reduced performance and increased maintenance needs',
-        mitigation: ['Weather protection systems', 'Enhanced drainage', 'Wind-resistant installation'],
-        cost: weatherCost
-      });
-    }
-
-    // Maintenance complexity risk with realistic costs
-    const complexElements = roofElements.filter(el => 
-      el.percentage > 0 && el.installationComplexity === 'complex'
-    );
-    if (complexElements.length > 0) {
-      const maintenanceCost = complexElements.length * 3000; // Realistic maintenance setup cost
-      risks.push({
-        category: 'Maintenance',
-        level: 'medium',
-        probability: 70,
-        impact: 'Higher than expected maintenance costs and complexity',
-        mitigation: ['Maintenance training (€1,000)', 'Service contracts', 'Access system installation (€2,000-5,000)'],
-        cost: maintenanceCost
-      });
-    }
-
-    setRiskAssessments(risks);
   };
 
   const analyzeInteractions = () => {
@@ -588,75 +320,26 @@ export default function CustomRoofDesigner({ roofSize, location }: CustomRoofDes
       });
     });
 
-    // Advanced interaction analysis
     const hasSolar = activeElements.some(el => el.id === 'solar');
     const hasGreen = activeElements.some(el => el.id === 'green');
     const hasWhite = activeElements.some(el => el.id === 'white');
     const hasNox = activeElements.some(el => el.id === 'nox');
 
     if (hasSolar && hasGreen) {
-      const solarPercentage = roofElements.find(el => el.id === 'solar')?.percentage || 0;
-      const greenPercentage = roofElements.find(el => el.id === 'green')?.percentage || 0;
-      
-      if (solarPercentage > 50 && greenPercentage > 30) {
-        newConflicts.push('High solar coverage may significantly limit green roof growth and biodiversity benefits');
-      } else {
-        newSynergies.push('Balanced solar-green configuration provides optimal cooling and energy generation');
-      }
+      newSynergies.push('Solar panels benefit from natural cooling provided by green roof');
+      newConflicts.push('Green roof growth may be limited under solar panel shading');
     }
 
     if (hasWhite && hasNox) {
-      newSynergies.push('White roof provides optimal UV exposure for NOx treatment activation');
+      newSynergies.push('White roof provides optimal base for NOx treatment coating');
+    }
+
+    if (hasSolar && hasWhite) {
+      newSynergies.push('White roof reduces heat buildup, improving solar panel efficiency');
     }
 
     setConflicts(newConflicts);
     setSynergies(newSynergies);
-  };
-
-  const optimizeConfiguration = () => {
-    // Simple optimization algorithm
-    const objectives = {
-      maxCo2Offset: true,
-      maxEnergyGeneration: true,
-      minCost: true,
-      minRisk: true
-    };
-
-    // This would implement a more sophisticated optimization algorithm
-    // For now, provide a simple recommendation
-    alert('Optimization feature coming soon! This would use multi-objective optimization to suggest the best configuration based on your priorities.');
-  };
-
-  const exportConfiguration = () => {
-    const config = {
-      roofElements: roofElements.filter(el => el.percentage > 0),
-      environmentalData: environmentalData.slice(0, 26),
-      riskAssessments,
-      totalCoverage,
-      roofSize,
-      location,
-      weatherScenario,
-      generatedAt: new Date().toISOString()
-    };
-    
-    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `custom-roof-config-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const saveConfiguration = () => {
-    const config = {
-      id: Date.now(),
-      name: `Configuration ${savedConfigurations.length + 1}`,
-      elements: roofElements.filter(el => el.percentage > 0),
-      totalCoverage,
-      createdAt: new Date()
-    };
-    setSavedConfigurations(prev => [...prev, config]);
   };
 
   const getTotalCosts = () => {
@@ -668,20 +351,18 @@ export default function CustomRoofDesigner({ roofSize, location }: CustomRoofDes
       sum + (element.percentage / 100) * roofSize * element.maintenancePerM2PerYear, 0
     );
 
-    const riskMitigationCost = riskAssessments.reduce((sum, risk) => sum + risk.cost, 0);
-
-    return { initialCost, annualMaintenance, riskMitigationCost };
+    return { initialCost, annualMaintenance };
   };
 
-  const getEnvironmentalScore = () => {
-    if (environmentalData.length === 0) return 0;
+  const getAnnualBenefits = () => {
+    if (environmentalData.length === 0) return { co2: 0, energy: 0, nox: 0 };
     
     const firstYearData = environmentalData[1] || environmentalData[0];
-    const co2Score = Math.min(100, (firstYearData?.totalBenefits || 0) / 100);
-    const biodiversityScore = firstYearData?.biodiversityIndex || 0;
-    const stormwaterScore = Math.min(100, (firstYearData?.stormwaterManaged || 0) / roofSize * 100);
-    
-    return Math.round((co2Score + biodiversityScore + stormwaterScore) / 3);
+    return {
+      co2: firstYearData?.totalBenefits || 0,
+      energy: firstYearData?.annualEnergyGeneration || 0,
+      nox: firstYearData?.annualNoxReduction || 0
+    };
   };
 
   const pieChartData = roofElements
@@ -693,741 +374,793 @@ export default function CustomRoofDesigner({ roofSize, location }: CustomRoofDes
     }));
 
   const costs = getTotalCosts();
-  const environmentalScore = getEnvironmentalScore();
+  const benefits = getAnnualBenefits();
+
+  // Mobile-optimized tab configuration
+  const tabs = [
+    { id: 'design', label: 'Design', icon: Settings, shortLabel: 'Design' },
+    { id: 'analysis', label: 'Analysis', icon: BarChart3, shortLabel: 'Analysis' },
+    { id: 'timeline', label: 'Timeline', icon: TrendingUp, shortLabel: 'Timeline' },
+    { id: 'metrics', label: 'Metrics', icon: Target, shortLabel: 'Metrics' },
+    { id: 'breakdown', label: 'Cost-Benefit', icon: Calculator, shortLabel: 'Cost' },
+    { id: 'optimization', label: 'Optimize', icon: Zap, shortLabel: 'Optimize' }
+  ];
+
+  // Environmental metrics for radar chart
+  const environmentalMetrics = [
+    { metric: 'CO₂ Offset', value: Math.min(100, (benefits.co2 / 100)), fullMark: 100 },
+    { metric: 'Energy Gen', value: Math.min(100, (benefits.energy / 200)), fullMark: 100 },
+    { metric: 'Air Quality', value: Math.min(100, (benefits.nox * 1000)), fullMark: 100 },
+    { metric: 'Durability', value: Math.min(100, roofElements.filter(el => el.percentage > 0).reduce((avg, el) => avg + el.lifespan, 0) / roofElements.filter(el => el.percentage > 0).length * 2.5), fullMark: 100 },
+    { metric: 'Cost Efficiency', value: Math.min(100, 100 - (costs.initialCost / roofSize / 2)), fullMark: 100 },
+    { metric: 'Maintenance', value: Math.min(100, 100 - (costs.annualMaintenance / roofSize * 10)), fullMark: 100 }
+  ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <Settings className="w-6 h-6 text-green-600" />
-          <h2 className="text-xl font-semibold text-gray-900">Enhanced Custom Roof Environmental Impact Analysis</h2>
-          <HelpTooltip content="Advanced environmental impact analysis with realistic industry-standard costs, weather modeling, risk assessment, and comprehensive performance metrics." />
+    <div 
+      className={`bg-white rounded-2xl shadow-lg border border-gray-100 ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : 'relative'}`}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Mobile-Optimized Header */}
+      <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
+            <span className="hidden sm:inline">Enhanced Custom Roof Environmental Impact Analysis</span>
+            <span className="sm:hidden">Custom Roof Analysis</span>
+          </h2>
+          <div className="hidden sm:block">
+            <HelpTooltip content="Design a mixed-use roof by allocating percentages to different elements. The system calculates initial CO2 impact, ongoing benefits, break-even points, and analyzes synergies and conflicts between elements." />
+          </div>
         </div>
         
         <div className="flex items-center space-x-2">
           <button
-            onClick={optimizeConfiguration}
-            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
+            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
           >
-            <Target className="w-4 h-4" />
-            <span>Optimize</span>
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
+          
+          {/* Mobile Menu Toggle */}
           <button
-            onClick={exportConfiguration}
-            className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="sm:hidden p-2 text-gray-600 hover:text-gray-800 transition-colors"
           >
-            <Download className="w-4 h-4" />
-            <span>Export</span>
-          </button>
-          <button
-            onClick={saveConfiguration}
-            className="flex items-center space-x-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-          >
-            <Save className="w-4 h-4" />
-            <span>Save</span>
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
-      {/* Enhanced View Tabs */}
-      <div className="flex flex-wrap gap-2 bg-gray-50 rounded-xl p-2 mb-6">
-        {[
-          { id: 'design', label: 'Roof Design', icon: Settings },
-          { id: 'analysis', label: 'Impact Analysis', icon: BarChart3 },
-          { id: 'environmental', label: 'Environmental Metrics', icon: Leaf },
-          { id: 'risk', label: 'Risk Assessment', icon: Shield },
-          { id: 'timeline', label: 'Timeline View', icon: TrendingUp },
-          { id: 'optimization', label: 'Optimization', icon: Target }
-        ].map((tab) => {
+      {/* Mobile Navigation Menu */}
+      {isMobileMenuOpen && (
+        <div className="sm:hidden bg-gray-50 border-b border-gray-200 p-4">
+          <div className="grid grid-cols-3 gap-2">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveView(tab.id as any);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`flex flex-col items-center space-y-1 p-3 rounded-lg text-xs font-medium transition-colors ${
+                    activeView === tab.id
+                      ? 'bg-green-600 text-white'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{tab.shortLabel}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Tab Navigation */}
+      <div className="hidden sm:flex space-x-1 bg-gray-100 rounded-lg p-1 m-6 mb-0">
+        {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveView(tab.id as any)}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeView === tab.id
-                  ? 'bg-white text-green-600 shadow-md border border-green-200'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  ? 'bg-white text-green-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               <Icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{tab.label}</span>
+              <span>{tab.label}</span>
             </button>
           );
         })}
       </div>
 
-      {/* Weather Scenario Selector */}
-      <div className="bg-blue-50 rounded-lg p-4 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-blue-900">Weather Scenario Analysis</h3>
-          <div className="flex items-center space-x-2">
-            <Thermometer className="w-4 h-4 text-blue-600" />
-            <select
-              value={weatherScenario}
-              onChange={(e) => setWeatherScenario(e.target.value as keyof typeof WEATHER_SCENARIOS)}
-              className="px-3 py-1 bg-white border border-blue-200 rounded text-sm"
-            >
-              <option value="mild">Mild Climate</option>
-              <option value="moderate">Moderate Climate</option>
-              <option value="harsh">Harsh Climate</option>
-            </select>
-          </div>
-        </div>
-        <div className="grid grid-cols-5 gap-4 text-sm">
-          {Object.entries(WEATHER_SCENARIOS[weatherScenario]).map(([key, value]) => (
-            <div key={key} className="text-center">
-              <div className="font-medium text-blue-900">{value}{key === 'temperature' ? '°C' : key === 'rainfall' ? 'mm' : key === 'windSpeed' ? 'km/h' : key === 'solarHours' ? 'h' : '%'}</div>
-              <div className="text-xs text-blue-700 capitalize">{key.replace(/([A-Z])/g, ' $1')}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Enhanced Design View */}
-      {activeView === 'design' && (
-        <div className="space-y-6">
-          {/* Coverage Status with Enhanced Metrics */}
-          <div className={`p-6 rounded-xl border-2 ${
-            totalCoverage === 100 ? 'border-green-500 bg-green-50' :
-            totalCoverage > 100 ? 'border-red-500 bg-red-50' :
-            'border-yellow-500 bg-yellow-50'
-          }`}>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold">{totalCoverage.toFixed(1)}%</div>
-                <div className="text-sm text-gray-600">Total Coverage</div>
+      <div className="p-4 sm:p-6">
+        {/* Design View */}
+        {activeView === 'design' && (
+          <div className="space-y-6">
+            {/* Mobile-Optimized Coverage Status */}
+            <div className={`p-4 rounded-lg border-2 ${
+              totalCoverage === 100 ? 'border-green-500 bg-green-50' :
+              totalCoverage > 100 ? 'border-red-500 bg-red-50' :
+              'border-yellow-500 bg-yellow-50'
+            }`}>
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-medium text-sm sm:text-base">Total Roof Coverage</span>
+                <span className="text-xl sm:text-2xl font-bold">{totalCoverage.toFixed(1)}%</span>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{environmentalScore}</div>
-                <div className="text-sm text-gray-600">Environmental Score</div>
+              <div className="w-full bg-gray-200 rounded-full h-3 sm:h-4">
+                <div 
+                  className={`h-3 sm:h-4 rounded-full transition-all duration-300 ${
+                    totalCoverage === 100 ? 'bg-green-500' :
+                    totalCoverage > 100 ? 'bg-red-500' :
+                    'bg-yellow-500'
+                  }`}
+                  style={{ width: `${Math.min(100, totalCoverage)}%` }}
+                />
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{calculateStructuralStress().toFixed(0)} kg/m²</div>
-                <div className="text-sm text-gray-600">Structural Load</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">€{costs.initialCost.toLocaleString()}</div>
-                <div className="text-sm text-gray-600">Initial Investment</div>
-              </div>
-            </div>
-            
-            <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
-              <div 
-                className={`h-4 rounded-full transition-all duration-300 ${
-                  totalCoverage === 100 ? 'bg-green-500' :
-                  totalCoverage > 100 ? 'bg-red-500' :
-                  'bg-yellow-500'
-                }`}
-                style={{ width: `${Math.min(100, totalCoverage)}%` }}
-              />
-            </div>
-            
-            {totalCoverage !== 100 && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">
-                  {totalCoverage < 100 ? 
-                    `${(100 - totalCoverage).toFixed(1)}% remaining` : 
-                    `${(totalCoverage - 100).toFixed(1)}% over capacity`
-                  }
-                </span>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => {
-                      const activeElements = roofElements.filter(el => el.percentage > 0);
-                      if (activeElements.length > 0) {
-                        const adjustment = (100 - totalCoverage) / activeElements.length;
-                        setRoofElements(prev => prev.map(element => 
-                          element.percentage > 0 
-                            ? { ...element, percentage: Math.max(0, Math.min(100, element.percentage + adjustment)) }
-                            : element
-                        ));
-                      }
-                    }}
-                    className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
-                  >
-                    Auto Balance
-                  </button>
-                  <button
-                    onClick={() => setRoofElements(ENHANCED_ROOF_ELEMENTS)}
-                    className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors"
-                  >
-                    Reset
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Enhanced Roof Element Controls */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {roofElements.map((element) => (
-              <div 
-                key={element.id} 
-                className={`border-2 rounded-xl p-6 transition-all duration-200 ${
-                  selectedElement === element.id 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => setSelectedElement(selectedElement === element.id ? null : element.id)}
-              >
-                <div className="flex items-center space-x-3 mb-4">
-                  <div 
-                    className="w-6 h-6 rounded-full"
-                    style={{ backgroundColor: element.color }}
-                  />
-                  <h3 className="font-semibold text-gray-900">{element.name}</h3>
-                  <span className="text-sm text-gray-500">
-                    {element.percentage.toFixed(1)}%
+              {totalCoverage !== 100 && (
+                <div className="mt-3 flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-2 sm:space-y-0">
+                  <span className="text-sm text-gray-600">
+                    {totalCoverage < 100 ? 
+                      `${(100 - totalCoverage).toFixed(1)}% remaining` : 
+                      `${(totalCoverage - 100).toFixed(1)}% over capacity`
+                    }
                   </span>
-                  {element.percentage > 0 && (
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                      Active
-                    </span>
+                  {totalCoverage > 0 && totalCoverage !== 100 && (
+                    <button
+                      onClick={autoBalance}
+                      className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Auto Balance
+                    </button>
                   )}
                 </div>
-                
-                <p className="text-sm text-gray-600 mb-4">{element.description}</p>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Coverage Percentage
-                    </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      value={element.percentage}
-                      onChange={(e) => updateElementPercentage(element.id, parseFloat(e.target.value))}
-                      className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                      style={{
-                        background: `linear-gradient(to right, ${element.color} 0%, ${element.color} ${element.percentage}%, #e5e7eb ${element.percentage}%, #e5e7eb 100%)`
-                      }}
-                    />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>0%</span>
-                      <span>50%</span>
-                      <span>100%</span>
-                    </div>
-                  </div>
-                  
-                  {/* Enhanced Metrics Grid */}
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="bg-gray-50 rounded p-2">
-                      <span className="text-gray-500">Area:</span>
-                      <div className="font-medium">{((element.percentage / 100) * roofSize).toFixed(0)} m²</div>
-                    </div>
-                    <div className="bg-gray-50 rounded p-2">
-                      <span className="text-gray-500">Cost:</span>
-                      <div className="font-medium">€{((element.percentage / 100) * roofSize * element.costPerM2).toLocaleString()}</div>
-                    </div>
-                    <div className="bg-gray-50 rounded p-2">
-                      <span className="text-gray-500">CO₂ Offset:</span>
-                      <div className="font-medium text-green-600">{((element.percentage / 100) * roofSize * element.co2PerM2PerYear).toFixed(0)} kg/yr</div>
-                    </div>
-                    <div className="bg-gray-50 rounded p-2">
-                      <span className="text-gray-500">Complexity:</span>
-                      <div className={`font-medium capitalize ${
-                        element.installationComplexity === 'simple' ? 'text-green-600' :
-                        element.installationComplexity === 'moderate' ? 'text-yellow-600' :
-                        'text-red-600'
-                      }`}>
-                        {element.installationComplexity}
+              )}
+            </div>
+
+            {/* Mobile-Optimized Roof Element Controls */}
+            <div className="space-y-4">
+              {roofElements.map((element) => (
+                <div key={element.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                  {/* Element Header - Always Visible */}
+                  <div 
+                    className="p-4 bg-gray-50 cursor-pointer"
+                    onClick={() => toggleElementExpansion(element.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div 
+                          className="w-5 h-5 rounded-full"
+                          style={{ backgroundColor: element.color }}
+                        />
+                        <div>
+                          <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{element.name}</h3>
+                          <p className="text-xs sm:text-sm text-gray-600">{element.percentage.toFixed(1)}%</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          {((element.percentage / 100) * roofSize).toFixed(0)} m²
+                        </span>
+                        {expandedElements.includes(element.id) ? 
+                          <ChevronUp className="w-4 h-4 text-gray-500" /> : 
+                          <ChevronDown className="w-4 h-4 text-gray-500" />
+                        }
                       </div>
                     </div>
                   </div>
 
-                  {/* Advanced Metrics Toggle */}
-                  {selectedElement === element.id && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                      <h4 className="font-medium text-gray-900 mb-3">Advanced Properties</h4>
-                      <div className="grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                          <span className="text-gray-500">Thermal Performance:</span>
-                          <div className="font-medium">{element.thermalPerformance} R-value</div>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Stormwater Retention:</span>
-                          <div className="font-medium">{element.stormwaterRetention}%</div>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Noise Reduction:</span>
-                          <div className="font-medium">{element.noiseReduction} dB</div>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Fire Resistance:</span>
-                          <div className={`font-medium capitalize ${
-                            element.fireResistance === 'high' ? 'text-green-600' :
-                            element.fireResistance === 'medium' ? 'text-yellow-600' :
-                            'text-red-600'
-                          }`}>
-                            {element.fireResistance}
+                  {/* Element Details - Expandable */}
+                  {expandedElements.includes(element.id) && (
+                    <div className="p-4 space-y-4">
+                      <p className="text-sm text-gray-600">{element.description}</p>
+                      
+                      {/* Mobile-Optimized Slider */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                          Coverage Percentage
+                        </label>
+                        <div className="space-y-3">
+                          {/* Custom styled range input for better mobile experience */}
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            value={element.percentage}
+                            onChange={(e) => updateElementPercentage(element.id, parseFloat(e.target.value))}
+                            className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                            style={{
+                              background: `linear-gradient(to right, ${element.color} 0%, ${element.color} ${element.percentage}%, #e5e7eb ${element.percentage}%, #e5e7eb 100%)`
+                            }}
+                          />
+                          
+                          {/* Mobile-friendly number input */}
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.1"
+                              value={element.percentage}
+                              onChange={(e) => updateElementPercentage(element.id, parseFloat(e.target.value) || 0)}
+                              className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            />
+                            <span className="text-sm text-gray-500">%</span>
                           </div>
                         </div>
-                        <div>
-                          <span className="text-gray-500">Structural Load:</span>
-                          <div className="font-medium">{element.structuralRequirements.additionalLoad} kg/m²</div>
+                      </div>
+                      
+                      {/* Mobile-Optimized Stats Grid */}
+                      <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <span className="text-gray-500 block">Cost</span>
+                          <div className="font-medium">
+                            €{((element.percentage / 100) * roofSize * element.costPerM2).toLocaleString()}
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-gray-500">Biodiversity Score:</span>
-                          <div className="font-medium">{element.environmentalBenefits.biodiversityScore}/100</div>
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <span className="text-gray-500 block">Lifespan</span>
+                          <div className="font-medium">{element.lifespan} years</div>
+                        </div>
+                        <div className="bg-green-50 rounded-lg p-3">
+                          <span className="text-gray-500 block">Annual CO₂</span>
+                          <div className="font-medium text-green-600">
+                            {((element.percentage / 100) * roofSize * element.co2PerM2PerYear).toFixed(0)} kg
+                          </div>
+                        </div>
+                        <div className="bg-blue-50 rounded-lg p-3">
+                          <span className="text-gray-500 block">Energy</span>
+                          <div className="font-medium text-blue-600">
+                            {((element.percentage / 100) * roofSize * element.energyPerM2PerYear).toFixed(0)} kWh
+                          </div>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+              ))}
+            </div>
 
-      {/* Impact Analysis View */}
-      {activeView === 'analysis' && totalCoverage === 100 && (
-        <div className="space-y-6">
-          {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
-              <div className="flex items-center justify-between mb-4">
-                <AlertTriangle className="w-8 h-8 opacity-80" />
-                <div className="text-right">
-                  <div className="text-2xl font-bold">
-                    {roofElements.reduce((sum, el) => sum + (el.percentage / 100) * roofSize * el.initialCo2PerM2, 0).toLocaleString()}
+            {/* Mobile-Optimized Roof Visualization */}
+            {totalCoverage > 0 && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-900 mb-4 text-sm sm:text-base">Roof Composition</h3>
+                <div className="flex flex-col lg:flex-row items-center space-y-4 lg:space-y-0 lg:space-x-6">
+                  <div className="w-full max-w-xs h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPieChart>
+                        <Pie
+                          data={pieChartData}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                          label={({ name, value }) => `${name}: ${value.toFixed(1)}%`}
+                        >
+                          {pieChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value: any) => [`${value.toFixed(1)}%`, 'Coverage']} />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
                   </div>
-                  <div className="text-red-100 text-sm">kg CO₂</div>
-                </div>
-              </div>
-              <div className="text-red-100 text-sm">Initial Environmental Impact</div>
-            </div>
-
-            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
-              <div className="flex items-center justify-between mb-4">
-                <Leaf className="w-8 h-8 opacity-80" />
-                <div className="text-right">
-                  <div className="text-2xl font-bold">
-                    {environmentalData.length > 0 ? (environmentalData[1]?.totalBenefits || 0).toLocaleString() : '0'}
-                  </div>
-                  <div className="text-green-100 text-sm">kg CO₂/year</div>
-                </div>
-              </div>
-              <div className="text-green-100 text-sm">Annual CO₂ Offset</div>
-            </div>
-
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
-              <div className="flex items-center justify-between mb-4">
-                <Zap className="w-8 h-8 opacity-80" />
-                <div className="text-right">
-                  <div className="text-2xl font-bold">
-                    {environmentalData.length > 0 ? (environmentalData[1]?.annualEnergyGeneration || 0).toLocaleString() : '0'}
-                  </div>
-                  <div className="text-blue-100 text-sm">kWh/year</div>
-                </div>
-              </div>
-              <div className="text-blue-100 text-sm">Annual Energy Impact</div>
-            </div>
-
-            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
-              <div className="flex items-center justify-between mb-4">
-                <Target className="w-8 h-8 opacity-80" />
-                <div className="text-right">
-                  <div className="text-2xl font-bold">
-                    {breakEvenYear ? breakEvenYear : '∞'}
-                  </div>
-                  <div className="text-orange-100 text-sm">years</div>
-                </div>
-              </div>
-              <div className="text-orange-100 text-sm">Break-Even Point</div>
-            </div>
-          </div>
-
-          {/* Element Performance Breakdown */}
-          <div className="bg-gray-50 rounded-lg p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Annual Performance by Element</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {roofElements.filter(el => el.percentage > 0).map((element) => {
-                const area = (element.percentage / 100) * roofSize;
-                const annualCo2 = area * element.co2PerM2PerYear;
-                const annualEnergy = area * element.energyPerM2PerYear;
-                
-                return (
-                  <div key={element.id} className="bg-white rounded-lg p-4">
-                    <div className="flex items-center space-x-2 mb-3">
-                      <div 
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: element.color }}
-                      />
-                      <span className="font-medium text-gray-900">{element.name}</span>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">CO₂ Offset:</span>
-                        <span className="font-medium text-green-600">{annualCo2.toFixed(0)} kg/year</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Energy:</span>
-                        <span className="font-medium text-blue-600">{annualEnergy.toFixed(0)} kWh/year</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Coverage:</span>
-                        <span className="font-medium">{element.percentage.toFixed(1)}%</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Environmental Metrics View */}
-      {activeView === 'environmental' && totalCoverage === 100 && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Environmental Impact Radar Chart */}
-            <div className="col-span-2 bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Environmental Impact Profile</h3>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={[
-                    {
-                      metric: 'CO₂ Offset',
-                      value: Math.min(100, (environmentalData[1]?.totalBenefits || 0) / 100),
-                      fullMark: 100
-                    },
-                    {
-                      metric: 'Energy Generation',
-                      value: Math.min(100, (environmentalData[1]?.annualEnergyGeneration || 0) / 200),
-                      fullMark: 100
-                    },
-                    {
-                      metric: 'Biodiversity',
-                      value: environmentalData[1]?.biodiversityIndex || 0,
-                      fullMark: 100
-                    },
-                    {
-                      metric: 'Stormwater Management',
-                      value: Math.min(100, (environmentalData[1]?.stormwaterManaged || 0) / roofSize * 100),
-                      fullMark: 100
-                    },
-                    {
-                      metric: 'Air Quality',
-                      value: Math.min(100, (environmentalData[1]?.airQualityImprovement || 0) / 100),
-                      fullMark: 100
-                    },
-                    {
-                      metric: 'Temperature Reduction',
-                      value: Math.min(100, (environmentalData[1]?.temperatureReduction || 0) * 10),
-                      fullMark: 100
-                    }
-                  ]}>
-                    <PolarGrid />
-                    <PolarAngleAxis dataKey="metric" />
-                    <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                    <Radar
-                      name="Environmental Impact"
-                      dataKey="value"
-                      stroke="#10b981"
-                      fill="#10b981"
-                      fillOpacity={0.3}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Environmental Metrics Summary */}
-            <div className="space-y-4">
-              <div className="bg-green-50 rounded-lg p-4">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Droplets className="w-5 h-5 text-blue-600" />
-                  <span className="font-medium text-gray-900">Stormwater Management</span>
-                </div>
-                <div className="text-2xl font-bold text-blue-600">
-                  {calculateStormwaterManagement().toFixed(0)} m²
-                </div>
-                <div className="text-sm text-gray-600">Annual retention capacity</div>
-              </div>
-
-              <div className="bg-orange-50 rounded-lg p-4">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Thermometer className="w-5 h-5 text-orange-600" />
-                  <span className="font-medium text-gray-900">Heat Island Reduction</span>
-                </div>
-                <div className="text-2xl font-bold text-orange-600">
-                  {calculateTemperatureReduction().toFixed(1)}°C
-                </div>
-                <div className="text-sm text-gray-600">Temperature reduction</div>
-              </div>
-
-              <div className="bg-purple-50 rounded-lg p-4">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Wind className="w-5 h-5 text-purple-600" />
-                  <span className="font-medium text-gray-900">Noise Reduction</span>
-                </div>
-                <div className="text-2xl font-bold text-purple-600">
-                  {calculateNoiseReduction().toFixed(1)} dB
-                </div>
-                <div className="text-sm text-gray-600">Sound dampening</div>
-              </div>
-
-              <div className="bg-green-50 rounded-lg p-4">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Leaf className="w-5 h-5 text-green-600" />
-                  <span className="font-medium text-gray-900">Biodiversity Index</span>
-                </div>
-                <div className="text-2xl font-bold text-green-600">
-                  {calculateBiodiversityIndex(1).toFixed(0)}/100
-                </div>
-                <div className="text-sm text-gray-600">Ecosystem support</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Timeline View */}
-      {activeView === 'timeline' && totalCoverage === 100 && environmentalData.length > 0 && (
-        <div className="space-y-6">
-          <div className="h-96">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={environmentalData.slice(0, 26)}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="year" stroke="#666" />
-                <YAxis stroke="#666" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '12px',
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                  }}
-                  formatter={(value: any, name: string) => [
-                    `${Number(value).toLocaleString()} kg`,
-                    name === 'cumulativeCo2Offset' ? 'Cumulative CO₂ Offset' : 
-                    name === 'netCo2Impact' ? 'Net CO₂ Impact' : name
-                  ]}
-                />
-                <Legend />
-                <Area 
-                  type="monotone" 
-                  dataKey="cumulativeCo2Offset" 
-                  stackId="1"
-                  stroke="#10b981" 
-                  fill="#10b981"
-                  fillOpacity={0.6}
-                  name="Cumulative CO₂ Offset"
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="netCo2Impact" 
-                  stackId="2"
-                  stroke="#ef4444" 
-                  fill="#ef4444"
-                  fillOpacity={0.6}
-                  name="Remaining CO₂ Debt"
-                />
-                {breakEvenYear && (
-                  <Line 
-                    type="monotone" 
-                    dataKey={() => 0}
-                    stroke="#000000"
-                    strokeDasharray="5 5"
-                    strokeWidth={2}
-                    name="Break-Even Point"
-                  />
-                )}
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Element Contribution Over Time */}
-          <div className="h-96">
-            <h3 className="font-semibold text-gray-900 mb-4">Energy Generation by Element</h3>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={environmentalData.slice(0, 26)}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="year" stroke="#666" />
-                <YAxis stroke="#666" />
-                <Tooltip 
-                  formatter={(value: any, name: string) => [
-                    `${Number(value).toLocaleString()} kWh`,
-                    name
-                  ]}
-                />
-                <Legend />
-                <Area 
-                  type="monotone" 
-                  dataKey="solarGeneration" 
-                  stackId="1"
-                  stroke="#f59e0b" 
-                  fill="#f59e0b"
-                  fillOpacity={0.8}
-                  name="Solar Generation"
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="coolRoofSavings" 
-                  stackId="1"
-                  stroke="#6b7280" 
-                  fill="#6b7280"
-                  fillOpacity={0.8}
-                  name="Cool Roof Savings"
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="greenRoofBenefits" 
-                  stackId="1"
-                  stroke="#10b981" 
-                  fill="#10b981"
-                  fillOpacity={0.8}
-                  name="Green Roof Benefits"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
-
-      {/* Risk Assessment View with Corrected Costs */}
-      {activeView === 'risk' && (
-        <div className="space-y-6">
-          <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-6">
-            <h3 className="font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-              <Shield className="w-5 h-5 text-red-600" />
-              <span>Comprehensive Risk Assessment</span>
-            </h3>
-            
-            {riskAssessments.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500" />
-                <p>No significant risks identified with current configuration</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {riskAssessments.map((risk, index) => (
-                  <div key={index} className={`border-l-4 p-4 rounded-r-lg ${
-                    risk.level === 'critical' ? 'border-red-500 bg-red-50' :
-                    risk.level === 'high' ? 'border-orange-500 bg-orange-50' :
-                    risk.level === 'medium' ? 'border-yellow-500 bg-yellow-50' :
-                    'border-blue-500 bg-blue-50'
-                  }`}>
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h4 className="font-semibold text-gray-900">{risk.category} Risk</h4>
-                        <div className="flex items-center space-x-3 mt-1">
-                          <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                            risk.level === 'critical' ? 'bg-red-200 text-red-800' :
-                            risk.level === 'high' ? 'bg-orange-200 text-orange-800' :
-                            risk.level === 'medium' ? 'bg-yellow-200 text-yellow-800' :
-                            'bg-blue-200 text-blue-800'
-                          }`}>
-                            {risk.level} risk
-                          </span>
-                          <span className="text-sm text-gray-600">{risk.probability.toFixed(0)}% probability</span>
+                  
+                  <div className="flex-1 w-full space-y-2">
+                    {pieChartData.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <div 
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: item.color }}
+                          />
+                          <span className="font-medium text-sm">{item.name}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold text-sm">{item.value.toFixed(1)}%</div>
+                          <div className="text-xs text-gray-500">
+                            {((item.value / 100) * roofSize).toFixed(0)} m²
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-semibold text-gray-900">€{risk.cost.toLocaleString()}</div>
-                        <div className="text-xs text-gray-500">Mitigation cost</div>
-                      </div>
-                    </div>
-                    
-                    <p className="text-sm text-gray-700 mb-3">{risk.impact}</p>
-                    
-                    <div>
-                      <h5 className="font-medium text-gray-900 mb-2">Mitigation Strategies:</h5>
-                      <ul className="list-disc list-inside space-y-1">
-                        {risk.mitigation.map((strategy, strategyIndex) => (
-                          <li key={strategyIndex} className="text-sm text-gray-600">{strategy}</li>
-                        ))}
-                      </ul>
-                    </div>
+                    ))}
                   </div>
-                ))}
-                
-                {/* Total Risk Mitigation Cost */}
-                <div className="bg-gray-100 rounded-lg p-4 mt-4">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-900">Total Risk Mitigation Cost:</span>
-                    <span className="text-xl font-bold text-gray-900">
-                      €{riskAssessments.reduce((sum, risk) => sum + risk.cost, 0).toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-2">
-                    This represents the estimated cost to address all identified risks. Actual costs may vary based on specific site conditions and chosen mitigation strategies.
-                  </p>
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
 
-      {/* Optimization View */}
-      {activeView === 'optimization' && (
-        <div className="space-y-6">
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6">
-            <h3 className="font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-              <Target className="w-5 h-5 text-purple-600" />
-              <span>Multi-Objective Optimization</span>
-            </h3>
-            
-            <div className="text-center py-12">
-              <Target className="w-16 h-16 mx-auto mb-4 text-purple-500" />
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">Advanced Optimization Coming Soon</h4>
-              <p className="text-gray-600 mb-6">
-                This feature will use multi-objective optimization algorithms to find the optimal roof configuration based on your priorities.
-              </p>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                  <h5 className="font-medium text-gray-900 mb-2">Maximize CO₂ Offset</h5>
-                  <p className="text-sm text-gray-600">Optimize for maximum environmental impact</p>
+            {/* Mobile-Optimized Interactions Analysis */}
+            {(synergies.length > 0 || conflicts.length > 0) && (
+              <div className="space-y-4">
+                {synergies.length > 0 && (
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      <h3 className="font-semibold text-green-900 text-sm">Synergies Detected</h3>
+                    </div>
+                    <ul className="space-y-2">
+                      {synergies.map((synergy, index) => (
+                        <li key={index} className="text-xs sm:text-sm text-green-800 flex items-start space-x-2">
+                          <span className="text-green-600 mt-1">•</span>
+                          <span>{synergy}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {conflicts.length > 0 && (
+                  <div className="bg-yellow-50 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                      <h3 className="font-semibold text-yellow-900 text-sm">Potential Conflicts</h3>
+                    </div>
+                    <ul className="space-y-2">
+                      {conflicts.map((conflict, index) => (
+                        <li key={index} className="text-xs sm:text-sm text-yellow-800 flex items-start space-x-2">
+                          <span className="text-yellow-600 mt-1">•</span>
+                          <span>{conflict}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Analysis View */}
+        {activeView === 'analysis' && totalCoverage === 100 && (
+          <div className="space-y-6">
+            {/* Mobile-Optimized Key Metrics */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 text-white">
+                <div className="flex items-center justify-between mb-3">
+                  <AlertTriangle className="w-6 h-6 opacity-80" />
+                  <div className="text-right">
+                    <div className="text-lg sm:text-xl font-bold">
+                      {roofElements.reduce((sum, el) => sum + (el.percentage / 100) * roofSize * el.initialCo2PerM2, 0).toLocaleString()}
+                    </div>
+                    <div className="text-red-100 text-xs">kg CO₂</div>
+                  </div>
                 </div>
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                  <h5 className="font-medium text-gray-900 mb-2">Minimize Cost</h5>
-                  <p className="text-sm text-gray-600">Find the most cost-effective solution</p>
+                <div className="text-red-100 text-xs">Initial Environmental Impact</div>
+              </div>
+
+              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white">
+                <div className="flex items-center justify-between mb-3">
+                  <Leaf className="w-6 h-6 opacity-80" />
+                  <div className="text-right">
+                    <div className="text-lg sm:text-xl font-bold">{benefits.co2.toLocaleString()}</div>
+                    <div className="text-green-100 text-xs">kg CO₂/year</div>
+                  </div>
                 </div>
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                  <h5 className="font-medium text-gray-900 mb-2">Maximize Energy</h5>
-                  <p className="text-sm text-gray-600">Optimize for energy generation and savings</p>
+                <div className="text-green-100 text-xs">Annual CO₂ Offset</div>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
+                <div className="flex items-center justify-between mb-3">
+                  <Zap className="w-6 h-6 opacity-80" />
+                  <div className="text-right">
+                    <div className="text-lg sm:text-xl font-bold">{benefits.energy.toLocaleString()}</div>
+                    <div className="text-blue-100 text-xs">kWh/year</div>
+                  </div>
                 </div>
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                  <h5 className="font-medium text-gray-900 mb-2">Minimize Risk</h5>
-                  <p className="text-sm text-gray-600">Reduce installation and maintenance risks</p>
+                <div className="text-blue-100 text-xs">Annual Energy Impact</div>
+              </div>
+
+              <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white">
+                <div className="flex items-center justify-between mb-3">
+                  <Target className="w-6 h-6 opacity-80" />
+                  <div className="text-right">
+                    <div className="text-lg sm:text-xl font-bold">
+                      {breakEvenYear ? breakEvenYear : '∞'}
+                    </div>
+                    <div className="text-orange-100 text-xs">years</div>
+                  </div>
+                </div>
+                <div className="text-orange-100 text-xs">Break-Even Point</div>
+              </div>
+            </div>
+
+            {/* Mobile-Optimized Element Performance */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-4 text-sm sm:text-base">Annual Performance by Element</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {roofElements.filter(el => el.percentage > 0).map((element) => {
+                  const area = (element.percentage / 100) * roofSize;
+                  const annualCo2 = area * element.co2PerM2PerYear;
+                  const annualEnergy = area * element.energyPerM2PerYear;
+                  
+                  return (
+                    <div key={element.id} className="bg-white rounded-lg p-4">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <div 
+                          className="w-4 h-4 rounded-full"
+                          style={{ backgroundColor: element.color }}
+                        />
+                        <span className="font-medium text-gray-900 text-sm">{element.name}</span>
+                      </div>
+                      <div className="space-y-2 text-xs sm:text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">CO₂ Offset:</span>
+                          <span className="font-medium text-green-600">{annualCo2.toFixed(0)} kg/year</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Energy:</span>
+                          <span className="font-medium text-blue-600">{annualEnergy.toFixed(0)} kWh/year</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Coverage:</span>
+                          <span className="font-medium">{element.percentage.toFixed(1)}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Timeline View */}
+        {activeView === 'timeline' && totalCoverage === 100 && environmentalData.length > 0 && (
+          <div className="space-y-6">
+            <div className="h-64 sm:h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={environmentalData.slice(0, 26)}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="year" 
+                    stroke="#666" 
+                    fontSize={12}
+                    interval={window.innerWidth < 640 ? 4 : 2}
+                  />
+                  <YAxis stroke="#666" fontSize={12} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '12px',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                      fontSize: '12px'
+                    }}
+                    formatter={(value: any, name: string) => [
+                      `${Number(value).toLocaleString()} kg`,
+                      name === 'cumulativeCo2Offset' ? 'Cumulative CO₂ Offset' : 
+                      name === 'netCo2Impact' ? 'Net CO₂ Impact' : name
+                    ]}
+                  />
+                  <Legend fontSize={12} />
+                  <Area 
+                    type="monotone" 
+                    dataKey="cumulativeCo2Offset" 
+                    stackId="1"
+                    stroke="#10b981" 
+                    fill="#10b981"
+                    fillOpacity={0.6}
+                    name="Cumulative CO₂ Offset"
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="netCo2Impact" 
+                    stackId="2"
+                    stroke="#ef4444" 
+                    fill="#ef4444"
+                    fillOpacity={0.6}
+                    name="Remaining CO₂ Debt"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="h-64 sm:h-80">
+              <h3 className="font-semibold text-gray-900 mb-4 text-sm sm:text-base">Energy Generation by Element</h3>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={environmentalData.slice(0, 26)}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="year" 
+                    stroke="#666" 
+                    fontSize={12}
+                    interval={window.innerWidth < 640 ? 4 : 2}
+                  />
+                  <YAxis stroke="#666" fontSize={12} />
+                  <Tooltip 
+                    contentStyle={{ fontSize: '12px' }}
+                    formatter={(value: any, name: string) => [
+                      `${Number(value).toLocaleString()} kWh`,
+                      name
+                    ]}
+                  />
+                  <Legend fontSize={12} />
+                  <Area 
+                    type="monotone" 
+                    dataKey="solarGeneration" 
+                    stackId="1"
+                    stroke="#f59e0b" 
+                    fill="#f59e0b"
+                    fillOpacity={0.8}
+                    name="Solar Generation"
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="coolRoofSavings" 
+                    stackId="1"
+                    stroke="#6b7280" 
+                    fill="#6b7280"
+                    fillOpacity={0.8}
+                    name="Cool Roof Savings"
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="greenRoofBenefits" 
+                    stackId="1"
+                    stroke="#10b981" 
+                    fill="#10b981"
+                    fillOpacity={0.8}
+                    name="Green Roof Benefits"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* Environmental Metrics View */}
+        {activeView === 'metrics' && totalCoverage === 100 && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Radar Chart */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-900 mb-4 text-sm sm:text-base">Environmental Impact Profile</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={environmentalMetrics}>
+                      <PolarGrid />
+                      <PolarAngleAxis dataKey="metric" fontSize={10} />
+                      <PolarRadiusAxis angle={90} domain={[0, 100]} fontSize={8} />
+                      <Radar
+                        name="Performance"
+                        dataKey="value"
+                        stroke="#10b981"
+                        fill="#10b981"
+                        fillOpacity={0.3}
+                        strokeWidth={2}
+                      />
+                      <Tooltip 
+                        contentStyle={{ fontSize: '12px' }}
+                        formatter={(value: any) => [`${value.toFixed(1)}%`, 'Score']}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
-              
-              <button
-                onClick={optimizeConfiguration}
-                className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium"
-              >
-                Request Early Access
+
+              {/* Environmental Metrics Cards */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Detailed Environmental Metrics</h3>
+                
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Wind className="w-4 h-4 text-blue-600" />
+                    <span className="font-medium text-blue-900 text-sm">Stormwater Management</span>
+                  </div>
+                  <div className="text-lg font-bold text-blue-700">
+                    {(roofElements.find(el => el.id === 'green')?.percentage || 0 * roofSize * 0.8).toFixed(0)} L/year
+                  </div>
+                  <div className="text-xs text-blue-600">Rainwater retention capacity</div>
+                </div>
+
+                <div className="bg-orange-50 rounded-lg p-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Sun className="w-4 h-4 text-orange-600" />
+                    <span className="font-medium text-orange-900 text-sm">Heat Island Reduction</span>
+                  </div>
+                  <div className="text-lg font-bold text-orange-700">
+                    {((roofElements.find(el => el.id === 'white')?.percentage || 0) + 
+                      (roofElements.find(el => el.id === 'green')?.percentage || 0) * 0.7).toFixed(1)}%
+                  </div>
+                  <div className="text-xs text-orange-600">Surface temperature reduction</div>
+                </div>
+
+                <div className="bg-purple-50 rounded-lg p-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Wind className="w-4 h-4 text-purple-600" />
+                    <span className="font-medium text-purple-900 text-sm">Noise Reduction</span>
+                  </div>
+                  <div className="text-lg font-bold text-purple-700">
+                    {(roofElements.find(el => el.id === 'green')?.percentage || 0 * 0.4).toFixed(1)} dB
+                  </div>
+                  <div className="text-xs text-purple-600">Sound insulation improvement</div>
+                </div>
+
+                <div className="bg-green-50 rounded-lg p-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Leaf className="w-4 h-4 text-green-600" />
+                    <span className="font-medium text-green-900 text-sm">Biodiversity Index</span>
+                  </div>
+                  <div className="text-lg font-bold text-green-700">
+                    {Math.min(100, (roofElements.find(el => el.id === 'green')?.percentage || 0) * 1.2).toFixed(0)}%
+                  </div>
+                  <div className="text-xs text-green-600">Habitat creation potential</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cost-Benefit Analysis */}
+        {activeView === 'breakdown' && totalCoverage === 100 && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Cost Analysis */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-900 mb-4 text-sm sm:text-base">Cost Analysis</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                    <span className="text-gray-700 text-sm">Initial Investment</span>
+                    <span className="font-semibold text-gray-900 text-sm">€{costs.initialCost.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                    <span className="text-gray-700 text-sm">Annual Maintenance</span>
+                    <span className="font-semibold text-gray-900 text-sm">€{costs.annualMaintenance.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                    <span className="text-gray-700 text-sm">25-Year Total Cost</span>
+                    <span className="font-semibold text-gray-900 text-sm">
+                      €{(costs.initialCost + costs.annualMaintenance * 25).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Benefit Analysis */}
+              <div className="bg-green-50 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-900 mb-4 text-sm sm:text-base">Environmental Benefits</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                    <span className="text-gray-700 text-sm">Annual CO₂ Offset</span>
+                    <span className="font-semibold text-green-600 text-sm">{benefits.co2.toLocaleString()} kg</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                    <span className="text-gray-700 text-sm">25-Year CO₂ Offset</span>
+                    <span className="font-semibold text-green-600 text-sm">{(benefits.co2 * 25).toLocaleString()} kg</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                    <span className="text-gray-700 text-sm">Annual Energy Impact</span>
+                    <span className="font-semibold text-blue-600 text-sm">{benefits.energy.toLocaleString()} kWh</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                    <span className="text-gray-700 text-sm">Annual NOₓ Reduction</span>
+                    <span className="font-semibold text-purple-600 text-sm">{benefits.nox.toFixed(1)} kg</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ROI Analysis */}
+            <div className="bg-blue-50 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-4 text-sm sm:text-base">Return on Investment Analysis</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">
+                    {breakEvenYear ? `${breakEvenYear} years` : 'N/A'}
+                  </div>
+                  <div className="text-xs sm:text-sm text-gray-600">Environmental Break-Even</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl sm:text-3xl font-bold text-green-600 mb-2">
+                    €{((benefits.energy * 0.25 - costs.annualMaintenance) * 25).toLocaleString()}
+                  </div>
+                  <div className="text-xs sm:text-sm text-gray-600">25-Year Net Savings</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl sm:text-3xl font-bold text-purple-600 mb-2">
+                    {(benefits.co2 / (costs.initialCost / 1000)).toFixed(1)}
+                  </div>
+                  <div className="text-xs sm:text-sm text-gray-600">kg CO₂ per €1000 invested</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Optimization View */}
+        {activeView === 'optimization' && (
+          <div className="text-center py-12">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Zap className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Multi-Objective Optimization</h3>
+              <p className="text-gray-600 mb-6 text-sm leading-relaxed">
+                Advanced optimization algorithms will help you find the perfect balance between environmental impact, 
+                cost efficiency, and performance based on your specific priorities and constraints.
+              </p>
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6 mb-6">
+                <h4 className="font-semibold text-gray-900 mb-3 text-sm">Optimization Objectives:</h4>
+                <ul className="text-left space-y-2 text-xs text-gray-700">
+                  <li>• Maximize CO₂ offset potential</li>
+                  <li>• Minimize total cost of ownership</li>
+                  <li>• Optimize energy generation</li>
+                  <li>• Balance maintenance requirements</li>
+                  <li>• Consider local climate factors</li>
+                </ul>
+              </div>
+              <button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg font-medium opacity-75 cursor-not-allowed">
+                Coming Soon - Advanced Optimization
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Warning for incomplete design */}
-      {totalCoverage !== 100 && activeView !== 'design' && (
-        <div className="text-center py-12">
-          <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-yellow-500" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Complete Your Roof Design</h3>
-          <p className="text-gray-600 mb-4">
-            Please allocate 100% of your roof area to access advanced analysis features.
-          </p>
-          <button
-            onClick={() => setActiveView('design')}
-            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
-          >
-            Return to Design
-          </button>
-        </div>
-      )}
+        {/* Warning for incomplete design */}
+        {totalCoverage !== 100 && activeView !== 'design' && (
+          <div className="text-center py-12">
+            <AlertTriangle className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-yellow-500" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Complete Your Roof Design</h3>
+            <p className="text-gray-600 mb-4 text-sm">
+              Please allocate 100% of your roof area to see the environmental impact analysis.
+            </p>
+            <button
+              onClick={() => setActiveView('design')}
+              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Return to Design
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Custom CSS for mobile-optimized slider */}
+      <style jsx>{`
+        .slider::-webkit-slider-thumb {
+          appearance: none;
+          height: 20px;
+          width: 20px;
+          border-radius: 50%;
+          background: #ffffff;
+          border: 2px solid #10b981;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .slider::-moz-range-thumb {
+          height: 20px;
+          width: 20px;
+          border-radius: 50%;
+          background: #ffffff;
+          border: 2px solid #10b981;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        @media (max-width: 640px) {
+          .slider::-webkit-slider-thumb {
+            height: 24px;
+            width: 24px;
+          }
+          
+          .slider::-moz-range-thumb {
+            height: 24px;
+            width: 24px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
