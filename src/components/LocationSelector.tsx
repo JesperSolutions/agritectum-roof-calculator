@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Search, Loader2, Globe, Zap, AlertCircle } from 'lucide-react';
+import { MapPin, Search, Loader2, Globe } from 'lucide-react';
 import { LocationData } from '../types/project';
 import { getLocationData, searchLocation } from '../utils/locationUtils';
-import { getEnhancedLocationData, EnhancedLocationData, PVGISApi } from '../utils/pvgisApi';
 
 interface LocationSelectorProps {
-  location: EnhancedLocationData | null;
-  onLocationChange: (location: EnhancedLocationData | null) => void;
+  location: LocationData | null;
+  onLocationChange: (location: LocationData | null) => void;
 }
 
 export default function LocationSelector({ location, onLocationChange }: LocationSelectorProps) {
@@ -15,7 +14,6 @@ export default function LocationSelector({ location, onLocationChange }: Locatio
   const [searchResults, setSearchResults] = useState<Array<{lat: number, lng: number, display_name: string}>>([]);
   const [showResults, setShowResults] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [isLoadingPVGIS, setIsLoadingPVGIS] = useState(false);
 
   const handleSearch = async (query: string) => {
     if (query.length < 3) {
@@ -39,27 +37,12 @@ export default function LocationSelector({ location, onLocationChange }: Locatio
   const handleLocationSelect = async (lat: number, lng: number, address: string) => {
     setShowResults(false);
     setSearchQuery(address);
-    setIsLoadingPVGIS(true);
     
     try {
-      const enhancedLocationData = await getEnhancedLocationData(lat, lng, true);
-      onLocationChange(enhancedLocationData);
+      const locationData = await getLocationData(lat, lng);
+      onLocationChange(locationData);
     } catch (error) {
-      console.error('Error getting enhanced location data:', error);
-      // Fallback to basic location data
-      try {
-        const basicLocationData = await getLocationData(lat, lng);
-        const enhancedData: EnhancedLocationData = {
-          ...basicLocationData,
-          dataSource: 'estimated',
-          lastUpdated: new Date()
-        };
-        onLocationChange(enhancedData);
-      } catch (fallbackError) {
-        console.error('Error getting basic location data:', fallbackError);
-      }
-    } finally {
-      setIsLoadingPVGIS(false);
+      console.error('Error getting location data:', error);
     }
   };
 
@@ -73,30 +56,14 @@ export default function LocationSelector({ location, onLocationChange }: Locatio
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        setIsLoadingPVGIS(true);
-        
         try {
-          const enhancedLocationData = await getEnhancedLocationData(latitude, longitude, true);
-          onLocationChange(enhancedLocationData);
-          setSearchQuery(enhancedLocationData.address);
+          const locationData = await getLocationData(latitude, longitude);
+          onLocationChange(locationData);
+          setSearchQuery(locationData.address);
         } catch (error) {
-          console.error('Error getting enhanced location data:', error);
-          // Fallback to basic location data
-          try {
-            const basicLocationData = await getLocationData(latitude, longitude);
-            const enhancedData: EnhancedLocationData = {
-              ...basicLocationData,
-              dataSource: 'estimated',
-              lastUpdated: new Date()
-            };
-            onLocationChange(enhancedData);
-            setSearchQuery(enhancedData.address);
-          } catch (fallbackError) {
-            console.error('Error getting basic location data:', fallbackError);
-          }
+          console.error('Error getting location data:', error);
         } finally {
           setIsGettingLocation(false);
-          setIsLoadingPVGIS(false);
         }
       },
       (error) => {
@@ -127,13 +94,7 @@ export default function LocationSelector({ location, onLocationChange }: Locatio
     <div className="space-y-4">
       <div className="flex items-center space-x-3 mb-4">
         <Globe className="w-5 h-5 text-blue-600" />
-        <h3 className="text-lg font-semibold text-gray-900">Location-Based Solar Optimization</h3>
-        {isLoadingPVGIS && (
-          <div className="flex items-center space-x-2 text-blue-600">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-sm">Loading PVGIS data...</span>
-          </div>
-        )}
+        <h3 className="text-lg font-semibold text-gray-900">Location-Based Optimization</h3>
       </div>
       
       <div className="relative">
@@ -157,7 +118,7 @@ export default function LocationSelector({ location, onLocationChange }: Locatio
           </div>
           <button
             onClick={getCurrentLocation}
-            disabled={isGettingLocation || isLoadingPVGIS}
+            disabled={isGettingLocation}
             className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             {isGettingLocation ? (
@@ -181,9 +142,6 @@ export default function LocationSelector({ location, onLocationChange }: Locatio
                 <div className="flex items-start space-x-3">
                   <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                   <span className="text-sm text-gray-900 line-clamp-2">{result.display_name}</span>
-                  {PVGISApi.isLocationSupported(result.lat, result.lng) && (
-                    <Zap className="w-4 h-4 text-green-500 flex-shrink-0" title="PVGIS data available" />
-                  )}
                 </div>
               </button>
             ))}
@@ -193,102 +151,35 @@ export default function LocationSelector({ location, onLocationChange }: Locatio
 
       {/* Location Info */}
       {location && (
-        <div className={`rounded-lg p-4 space-y-3 ${
-          location.dataSource === 'pvgis' ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'
-        }`}>
+        <div className="bg-blue-50 rounded-lg p-4 space-y-3">
           <div className="flex items-start space-x-3">
-            <MapPin className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-              location.dataSource === 'pvgis' ? 'text-green-600' : 'text-blue-600'
-            }`} />
+            <MapPin className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-1">
-                <h4 className="font-medium text-gray-900">Selected Location</h4>
-                {location.dataSource === 'pvgis' ? (
-                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full flex items-center space-x-1">
-                    <Zap className="w-3 h-3" />
-                    <span>PVGIS Data</span>
-                  </span>
-                ) : (
-                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full flex items-center space-x-1">
-                    <AlertCircle className="w-3 h-3" />
-                    <span>Estimated</span>
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-gray-600 mb-3">{location.address}</p>
-              
-              {location.dataSource === 'pvgis' && location.pvgisData && (
-                <div className="text-xs text-green-700 mb-3">
-                  ✓ High-precision solar data from European Commission PVGIS
-                </div>
-              )}
+              <h4 className="font-medium text-gray-900">Selected Location</h4>
+              <p className="text-sm text-gray-600 mt-1">{location.address}</p>
             </div>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
             <div className="text-center">
-              <div className={`text-lg font-semibold ${
-                location.dataSource === 'pvgis' ? 'text-green-600' : 'text-blue-600'
-              }`}>
-                {location.solarIrradiance}
-              </div>
+              <div className="text-lg font-semibold text-blue-600">{location.solarIrradiance}</div>
               <div className="text-xs text-gray-600">kWh/m²/year</div>
               <div className="text-xs text-gray-500">Solar Irradiance</div>
             </div>
             <div className="text-center">
-              <div className={`text-lg font-semibold ${
-                location.dataSource === 'pvgis' ? 'text-green-600' : 'text-blue-600'
-              }`}>
-                {location.climateZone}
-              </div>
+              <div className="text-lg font-semibold text-green-600">{location.climateZone}</div>
               <div className="text-xs text-gray-500">Climate Zone</div>
             </div>
             <div className="text-center">
-              <div className={`text-lg font-semibold ${
-                location.dataSource === 'pvgis' ? 'text-green-600' : 'text-blue-600'
-              }`}>
+              <div className="text-lg font-semibold text-orange-600">
                 {location.temperatureRange.min}° to {location.temperatureRange.max}°C
               </div>
               <div className="text-xs text-gray-500">Temperature Range</div>
             </div>
             <div className="text-center">
-              <div className={`text-lg font-semibold ${
-                location.dataSource === 'pvgis' ? 'text-green-600' : 'text-blue-600'
-              }`}>
-                {location.country}
-              </div>
+              <div className="text-lg font-semibold text-purple-600">{location.country}</div>
               <div className="text-xs text-gray-500">Country</div>
             </div>
-          </div>
-
-          {/* PVGIS-specific data */}
-          {location.dataSource === 'pvgis' && location.pvSystemPotential && (
-            <div className="mt-4 pt-4 border-t border-green-200">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                <div className="text-center">
-                  <div className="text-lg font-semibold text-green-600">
-                    {location.pvSystemPotential.optimalTilt}°
-                  </div>
-                  <div className="text-xs text-gray-500">Optimal Tilt</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-semibold text-green-600">
-                    {location.pvSystemPotential.optimalAzimuth}°
-                  </div>
-                  <div className="text-xs text-gray-500">Optimal Azimuth</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-semibold text-green-600">
-                    {(location.pvSystemPotential.performanceRatio * 100).toFixed(1)}%
-                  </div>
-                  <div className="text-xs text-gray-500">Performance Ratio</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="text-xs text-gray-500 mt-2">
-            Last updated: {location.lastUpdated.toLocaleString()}
           </div>
         </div>
       )}
