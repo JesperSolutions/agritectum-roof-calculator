@@ -8,27 +8,31 @@ import { PVGISData, MonthlyData } from './solarCalculations';
 // Use proxy path for development, direct URL for production
 const PVGIS_BASE_URL = import.meta.env.DEV ? '/api/pvgis' : 'https://re.jrc.ec.europa.eu/api/v5_2';
 
-interface PVGISMonthlyResponse {
+interface PVGISDailyResponse {
   inputs: {
     location: {
       latitude: number;
       longitude: number;
       elevation: number;
     };
+    meteo_data: {
+      radiation_db: string;
+      meteo_db: string;
+      year_min: number;
+      year_max: number;
+      use_horizon: boolean;
+      horizon_db: string;
+    };
   };
   outputs: {
-    monthly: Array<{
+    daily_profile: Array<{
       month: number;
-      H_sun: number;      // Global irradiation on horizontal plane (kWh/m²)
-      H_dif: number;      // Diffuse irradiation (kWh/m²)
+      day: number;
+      H_sun: number;      // Global irradiation on horizontal plane (Wh/m²)
       T2m: number;        // 2-meter air temperature (°C)
       WS10m: number;      // Wind speed at 10m (m/s)
-      Int: number;        // Solar irradiation on inclined plane (kWh/m²)
+      Int: number;        // Solar irradiation on inclined plane (Wh/m²)
     }>;
-    totals: {
-      H_year: number;     // Yearly sum of global irradiation (kWh/m²)
-      Int_year: number;   // Yearly sum on inclined plane (kWh/m²)
-    };
   };
 }
 
@@ -83,12 +87,13 @@ export class PVGISApi {
     azimuth?: number
   ): Promise<PVGISData> {
     try {
-      // Build URL parameters
+      // Build URL parameters for daily radiation data
       const params = new URLSearchParams({
         lat: latitude.toFixed(6),
         lon: longitude.toFixed(6),
         outputformat: 'json',
-        browser: '1'
+        browser: '1',
+        dailyrad: '1'  // Request daily radiation data
       });
 
       if (optimalInclination) {
@@ -116,7 +121,7 @@ export class PVGISApi {
         throw new Error(`PVGIS API error: ${response.status} ${response.statusText}. Response: ${errorText}`);
       }
 
-      const data: PVGISMonthlyResponse = await response.json();
+      const data: PVGISDailyResponse = await response.json();
       
       return this.processPVGISData(data);
     } catch (error) {
@@ -291,9 +296,9 @@ export class PVGISApi {
   }
 
   /**
-   * Process raw PVGIS data into our format
+   * Process raw PVGIS daily data into monthly aggregated format
    */
-  private static processPVGISData(data: PVGISMonthlyResponse): PVGISData {
+  private static processPVGISData(data: PVGISDailyResponse): PVGISData {
     const monthNames = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
@@ -301,24 +306,63 @@ export class PVGISApi {
 
     const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
-    const monthly: MonthlyData[] = data.outputs.monthly.map(month => ({
-      month: month.month,
-      monthName: monthNames[month.month - 1],
-      avgDailyIrradiance: month.H_sun / daysInMonth[month.month - 1],
-      avgTemperature: month.T2m,
-      optimalTilt: Math.abs(data.inputs.location.latitude), // Simplified
-      daysInMonth: daysInMonth[month.month - 1],
-      totalIrradiance: month.H_sun
-    }));
+    // Aggregate daily data into monthly averages
+    const monthlyAggregates: { [month: number]: { 
+      H_sun: number[], 
+      T2m: number[], 
+      Int: number[] 
+    } } = {};
 
-    // Calculate yearly averages
-    const avgTemperature = monthly.reduce((sum, m) => sum + m.avgTemperature, 0) / 12;
-    const optimalTilt = Math.abs(data.inputs.location.latitude);
+    // Initialize monthly aggregates
+    for (let i = 1; i <= 12; i++) {
+      monthlyAggregates[i] = { H_sun: [], T2m: [], Int: [] };
+    }
 
-    // Estimate PV potential (simplified)
+    // Group daily data by month
+    data.outputs.daily_profile.forEach(day => {
+      monthlyAggregates[day.month].H_sun.push(day.H_sun / 1000); // Convert Wh/m² to kWh/m²
+      monthlyAggregates[day.month].T2m.push(day.T2m);
+      monthlyAggregates[day.month].Int.push(day.Int / 1000); // Convert Wh/m² to kWh/m²
+    });
+
+    // Calculate monthly averages
+    const monthly: MonthlyData[] = [];
+    let yearlyTotalIrradiance = 0;
+    let yearlyAvgTemperature = 0;
+
+    for (let month = 1; month <= 12; month++) {
+      const monthData = monthlyAggregates[month];
+      
+      const avgDailyIrradiance = monthData.H_sun.length > 0 
+        ? monthData.H_sun.reduce((sum, val) => sum + val, 0) / monthData.H_sun.length
+        : 0;
+      
+      const avgTemperature = monthData.T2m.length > 0
+        ? monthData.T2m.reduce((sum, val) => sum + val, 0) / monthData.T2m.length
+        : 15; // Default temperature
+      
+      const totalIrradiance = avgDailyIrradiance * daysInMonth[month - 1];
+      
+      monthly.push({
+        month,
+        monthName: monthNames[month - 1],
+        avgDailyIrradiance,
+        avgTemperature,
+        optimalTilt: Math.abs(data.inputs.location.latitude),
+        daysInMonth: daysInMonth[month - 1],
+        totalIrradiance
+      });
+
+      yearlyTotalIrradiance += totalIrradiance;
+      yearlyAvgTemperature += avgTemperature;
+    }
+
+    yearlyAvgTemperature /= 12;
+
+    // Calculate PV potential (simplified)
     const systemEfficiency = 0.15; // 15% system efficiency
     const performanceRatio = 0.75; // 75% performance ratio
-    const fixedSystem = data.outputs.totals.H_year * systemEfficiency * performanceRatio * 1000; // kWh/kWp
+    const fixedSystem = yearlyTotalIrradiance * systemEfficiency * performanceRatio * 1000; // kWh/kWp
     
     return {
       location: {
@@ -328,9 +372,9 @@ export class PVGISApi {
       },
       monthly,
       yearly: {
-        totalIrradiance: data.outputs.totals.H_year,
-        avgTemperature,
-        optimalTilt,
+        totalIrradiance: yearlyTotalIrradiance,
+        avgTemperature: yearlyAvgTemperature,
+        optimalTilt: Math.abs(data.inputs.location.latitude),
         optimalAzimuth: 180 // South-facing default
       },
       pvPotential: {
