@@ -1,14 +1,19 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
-import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun, FileText, ToggleLeft, ToggleRight, Save, FolderOpen, HelpCircle } from 'lucide-react';
+import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun, FileText, ToggleLeft, ToggleRight, Save, FolderOpen, HelpCircle, Undo, Redo, Play } from 'lucide-react';
 import LeadCaptureModal from './components/LeadCaptureModal';
 import LocationSelector from './components/LocationSelector';
 import ProjectManager from './components/ProjectManager';
 import EnhancedCharts from './components/EnhancedCharts';
 import SmartRecommendations from './components/SmartRecommendations';
 import HelpTooltip from './components/HelpTooltip';
+import GuidedTour from './components/GuidedTour';
+import ProgressIndicator from './components/ProgressIndicator';
+import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
 import { Project, LocationData, ROOF_TYPES } from './types/project';
 import { generateProjectId } from './utils/projectStorage';
+import { useUndoRedo } from './hooks/useUndoRedo';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 // Add realistic performance and degradation factors to SOLAR_SPECS
 const SOLAR_SPECS = {
@@ -26,22 +31,45 @@ const SOLAR_SPECS = {
 // Conversion factor: 1 m² = 10.764 sq ft
 const M2_TO_SQFT = 10.764;
 
+interface AppState {
+  roofSize: number;
+  roofType: keyof typeof ROOF_TYPES;
+  includeSolar: boolean;
+  useMetric: boolean;
+  location: LocationData | null;
+}
+
 export default function RoofImpactDashboard() {
-  const [roofSize, setRoofSize] = useState(1000);
-  const [roofType, setRoofType] = useState<keyof typeof ROOF_TYPES>("Photocatalytic Coating");
-  const [includeSolar, setIncludeSolar] = useState(false);
+  // Undo/Redo state management
+  const [appState, undoRedoActions] = useUndoRedo<AppState>({
+    roofSize: 1000,
+    roofType: "Photocatalytic Coating",
+    includeSolar: false,
+    useMetric: true,
+    location: null
+  });
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [useMetric, setUseMetric] = useState(true); // true = m², false = sq ft
-  const [location, setLocation] = useState<LocationData | null>(null);
   const [currentProject, setCurrentProject] = useState<Partial<Project>>({
     id: generateProjectId(),
     createdAt: new Date()
   });
+  const [showTour, setShowTour] = useState(false);
+  const [hasSeenTour, setHasSeenTour] = useState(false);
 
-  const data = ROOF_TYPES[roofType];
+  // Check if user has seen the tour before
+  useEffect(() => {
+    const tourSeen = localStorage.getItem('roof-calculator-tour-seen');
+    if (!tourSeen) {
+      setShowTour(true);
+    }
+    setHasSeenTour(!!tourSeen);
+  }, []);
+
+  const data = ROOF_TYPES[appState.roofType];
 
   // Convert roof size for calculations (always use m² internally)
-  const roofSizeM2 = useMetric ? roofSize : roofSize / M2_TO_SQFT;
+  const roofSizeM2 = appState.useMetric ? appState.roofSize : appState.roofSize / M2_TO_SQFT;
 
   const initialCo2 = 19 * roofSizeM2;
   const co2PerYear = data.co2 * roofSizeM2;
@@ -49,17 +77,17 @@ export default function RoofImpactDashboard() {
   const energyPerYear = data.energy * roofSizeM2;
 
   // Adjust solar calculations based on location
-  const locationMultiplier = location ? (location.solarIrradiance / 1100) : 1; // 1100 is base irradiance
+  const locationMultiplier = appState.location ? (appState.location.solarIrradiance / 1100) : 1; // 1100 is base irradiance
   const adjustedSolarHours = SOLAR_SPECS.hoursPerDay * locationMultiplier;
 
   // Calculate annual solar generation (kWh/year) with performance factor and location adjustment
-  const solarEnergyPerYear = includeSolar 
+  const solarEnergyPerYear = appState.includeSolar 
     ? (SOLAR_SPECS.powerPerM2 * roofSizeM2 * adjustedSolarHours 
         * SOLAR_SPECS.daysPerYear * SOLAR_SPECS.performanceFactor) / 1000 
     : 0;  // kWh/year (includes derating for real conditions)
 
-  const solarCo2PerYear = includeSolar ? solarEnergyPerYear * SOLAR_SPECS.co2PerKwh : 0;
-  const solarCost = includeSolar ? SOLAR_SPECS.costPerM2 * roofSizeM2 : 0;
+  const solarCo2PerYear = appState.includeSolar ? solarEnergyPerYear * SOLAR_SPECS.co2PerKwh : 0;
+  const solarCost = appState.includeSolar ? SOLAR_SPECS.costPerM2 * roofSizeM2 : 0;
 
   // Combined totals
   const totalEnergyPerYear = energyPerYear + solarEnergyPerYear;
@@ -70,22 +98,110 @@ export default function RoofImpactDashboard() {
 
   const totalInstallationCost = (data.totalCost * roofSizeM2) + solarCost;
   const installationTimeHours = data.installationRate > 0 ? roofSizeM2 / data.installationRate : 0;
-  const solarInstallationHours = includeSolar ? roofSizeM2 / 20 : 0; // 20 m²/hour for solar
+  const solarInstallationHours = appState.includeSolar ? roofSizeM2 / 20 : 0; // 20 m²/hour for solar
   const totalInstallationHours = installationTimeHours + solarInstallationHours;
   const installationDays = Math.ceil(totalInstallationHours / 8);
+
+  // Progress tracking
+  const progressSteps = [
+    {
+      id: 'roof-size',
+      title: 'Set Roof Size',
+      description: 'Enter your roof dimensions',
+      status: appState.roofSize > 0 ? 'completed' : 'pending',
+      required: true
+    },
+    {
+      id: 'roof-type',
+      title: 'Choose Roof Type',
+      description: 'Select sustainable roofing solution',
+      status: appState.roofType ? 'completed' : 'pending',
+      required: true
+    },
+    {
+      id: 'location',
+      title: 'Add Location',
+      description: 'Set location for accurate calculations',
+      status: appState.location ? 'completed' : 'pending',
+      required: false
+    },
+    {
+      id: 'solar',
+      title: 'Solar Configuration',
+      description: 'Decide on solar panel inclusion',
+      status: 'completed', // Always completed as it's optional
+      required: false
+    }
+  ];
+
+  const currentStepId = progressSteps.find(step => step.status === 'pending')?.id || 'completed';
+
+  // Keyboard shortcuts
+  const shortcuts = [
+    {
+      key: 'z',
+      ctrlKey: true,
+      action: undoRedoActions.undo,
+      description: 'Undo last change'
+    },
+    {
+      key: 'y',
+      ctrlKey: true,
+      action: undoRedoActions.redo,
+      description: 'Redo last change'
+    },
+    {
+      key: 's',
+      ctrlKey: true,
+      action: () => {
+        // Trigger save project modal
+        const saveButton = document.querySelector('[data-action="save-project"]') as HTMLButtonElement;
+        saveButton?.click();
+      },
+      description: 'Save current project'
+    },
+    {
+      key: 'n',
+      ctrlKey: true,
+      action: handleNewProject,
+      description: 'Create new project'
+    },
+    {
+      key: 't',
+      ctrlKey: true,
+      action: () => setShowTour(true),
+      description: 'Start guided tour'
+    },
+    {
+      key: 'r',
+      ctrlKey: true,
+      action: () => setIsModalOpen(true),
+      description: 'Get roof assessment report'
+    },
+    {
+      key: '?',
+      action: () => {
+        const helpButton = document.querySelector('[data-action="keyboard-help"]') as HTMLButtonElement;
+        helpButton?.click();
+      },
+      description: 'Show keyboard shortcuts'
+    }
+  ];
+
+  useKeyboardShortcuts({ shortcuts });
 
   // Update current project when settings change
   useEffect(() => {
     setCurrentProject(prev => ({
       ...prev,
       roofSize: roofSizeM2,
-      roofType,
-      includeSolar,
-      useMetric,
-      location,
+      roofType: appState.roofType,
+      includeSolar: appState.includeSolar,
+      useMetric: appState.useMetric,
+      location: appState.location,
       updatedAt: new Date()
     }));
-  }, [roofSizeM2, roofType, includeSolar, useMetric, location]);
+  }, [roofSizeM2, appState.roofType, appState.includeSolar, appState.useMetric, appState.location]);
 
   // If we want to factor panel degradation into the 50-year chart:
   const chartData = [];
@@ -93,7 +209,7 @@ export default function RoofImpactDashboard() {
 
   for (let year = 0; year <= 50; year++) {
     let solarGenThisYear = 0;
-    if (includeSolar && year <= SOLAR_SPECS.lifespan) {
+    if (appState.includeSolar && year <= SOLAR_SPECS.lifespan) {
       solarGenThisYear = solarEnergyPerYear * Math.pow(1 - SOLAR_SPECS.degradationRate, year);
     }
 
@@ -115,20 +231,20 @@ export default function RoofImpactDashboard() {
 
   const comparisonData = Object.entries(ROOF_TYPES).map(([name, typeData]) => ({
     name,
-    co2Offset: typeData.co2 * roofSizeM2 + (includeSolar ? solarCo2PerYear : 0),
-    energySavings: typeData.energy * roofSizeM2 + (includeSolar ? solarEnergyPerYear : 0),
+    co2Offset: typeData.co2 * roofSizeM2 + (appState.includeSolar ? solarCo2PerYear : 0),
+    energySavings: typeData.energy * roofSizeM2 + (appState.includeSolar ? solarEnergyPerYear : 0),
     noxReduction: typeData.nox * roofSizeM2,
-    totalCost: typeData.totalCost * roofSizeM2 + (includeSolar ? solarCost : 0),
+    totalCost: typeData.totalCost * roofSizeM2 + (appState.includeSolar ? solarCost : 0),
     color: typeData.color
   }));
 
   // Calculator data for the modal
   const calculatorData = {
     roofSize: roofSizeM2, // Always pass m² to modal
-    roofSizeDisplay: roofSize, // Display value in current unit
-    unit: useMetric ? 'm²' : 'sq ft',
-    roofType,
-    includeSolar,
+    roofSizeDisplay: appState.roofSize, // Display value in current unit
+    unit: appState.useMetric ? 'm²' : 'sq ft',
+    roofType: appState.roofType,
+    includeSolar: appState.includeSolar,
     totalCo2PerYear,
     totalEnergyPerYear,
     noxPerYear,
@@ -139,55 +255,81 @@ export default function RoofImpactDashboard() {
 
   // Handle unit conversion when toggling
   const handleUnitToggle = () => {
-    if (useMetric) {
-      // Converting from m² to sq ft
-      setRoofSize(Math.round(roofSize * M2_TO_SQFT));
-    } else {
-      // Converting from sq ft to m²
-      setRoofSize(Math.round(roofSize / M2_TO_SQFT));
-    }
-    setUseMetric(!useMetric);
+    const newUseMetric = !appState.useMetric;
+    const newRoofSize = newUseMetric 
+      ? Math.round(appState.roofSize / M2_TO_SQFT)
+      : Math.round(appState.roofSize * M2_TO_SQFT);
+    
+    undoRedoActions.set({
+      ...appState,
+      roofSize: newRoofSize,
+      useMetric: newUseMetric
+    });
   };
 
   // Quick size buttons based on current unit
-  const quickSizes = useMetric 
+  const quickSizes = appState.useMetric 
     ? [500, 1000, 2000, 5000] 
     : [5382, 10764, 21528, 53820]; // Equivalent in sq ft
 
   const handleProjectLoad = (project: Project) => {
-    setRoofSize(project.useMetric ? project.roofSize : Math.round(project.roofSize * M2_TO_SQFT));
-    setRoofType(project.roofType);
-    setIncludeSolar(project.includeSolar);
-    setUseMetric(project.useMetric);
-    setLocation(project.location || null);
+    const newState = {
+      roofSize: project.useMetric ? project.roofSize : Math.round(project.roofSize * M2_TO_SQFT),
+      roofType: project.roofType,
+      includeSolar: project.includeSolar,
+      useMetric: project.useMetric,
+      location: project.location || null
+    };
+    undoRedoActions.set(newState);
     setCurrentProject(project);
   };
 
-  const handleNewProject = () => {
-    setRoofSize(1000);
-    setRoofType("Photocatalytic Coating");
-    setIncludeSolar(false);
-    setUseMetric(true);
-    setLocation(null);
+  function handleNewProject() {
+    const newState = {
+      roofSize: 1000,
+      roofType: "Photocatalytic Coating" as keyof typeof ROOF_TYPES,
+      includeSolar: false,
+      useMetric: true,
+      location: null
+    };
+    undoRedoActions.set(newState);
     setCurrentProject({
       id: generateProjectId(),
       createdAt: new Date()
     });
-  };
+    undoRedoActions.clear(); // Clear undo/redo history for new project
+  }
 
   const handleRecommendationApply = (recommendation: any) => {
     if (recommendation.type === 'add_solar') {
-      setIncludeSolar(recommendation.data.includeSolar);
+      undoRedoActions.set({
+        ...appState,
+        includeSolar: recommendation.data.includeSolar
+      });
     } else if (recommendation.type === 'change_roof_type') {
-      setRoofType(recommendation.data.roofType);
+      undoRedoActions.set({
+        ...appState,
+        roofType: recommendation.data.roofType
+      });
     }
-    // Add more recommendation types as needed
+  };
+
+  const handleTourComplete = () => {
+    localStorage.setItem('roof-calculator-tour-seen', 'true');
+    setHasSeenTour(true);
+    setShowTour(false);
+  };
+
+  const handleTourSkip = () => {
+    localStorage.setItem('roof-calculator-tour-seen', 'true');
+    setHasSeenTour(true);
+    setShowTour(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-green-100">
+      <div className="bg-white shadow-sm border-b border-green-100" data-tour="header">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -199,13 +341,51 @@ export default function RoofImpactDashboard() {
                 />
               </div>
             </div>
+            
+            {/* Header Actions */}
+            <div className="flex items-center space-x-4">
+              {/* Undo/Redo Buttons */}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={undoRedoActions.undo}
+                  disabled={!undoRedoActions.canUndo}
+                  className="p-2 text-gray-600 hover:text-gray-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                  title="Undo (Ctrl+Z)"
+                >
+                  <Undo className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={undoRedoActions.redo}
+                  disabled={!undoRedoActions.canRedo}
+                  className="p-2 text-gray-600 hover:text-gray-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                  title="Redo (Ctrl+Y)"
+                >
+                  <Redo className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Tour Button */}
+              {hasSeenTour && (
+                <button
+                  onClick={() => setShowTour(true)}
+                  className="flex items-center space-x-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                  title="Start Guided Tour (Ctrl+T)"
+                >
+                  <Play className="w-4 h-4" />
+                  <span className="hidden sm:inline">Tour</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        {/* Progress Indicator */}
+        <ProgressIndicator steps={progressSteps} currentStep={currentStepId} />
+
         {/* Project Management */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8" data-tour="project-management">
           <div className="flex items-center space-x-3 mb-6">
             <FolderOpen className="w-6 h-6 text-purple-600" />
             <h2 className="text-xl font-semibold text-gray-900">Project Management</h2>
@@ -219,27 +399,29 @@ export default function RoofImpactDashboard() {
         </div>
 
         {/* Location Selector */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8" data-tour="location-selector">
           <div className="flex items-center space-x-3 mb-4">
             <HelpTooltip content="Location affects solar panel efficiency and climate-specific benefits. Enter your building's location to get more accurate calculations based on local solar irradiance, climate zone, and temperature ranges." />
           </div>
           <LocationSelector 
-            location={location}
-            onLocationChange={setLocation}
+            location={appState.location}
+            onLocationChange={(location) => undoRedoActions.set({ ...appState, location })}
           />
         </div>
 
         {/* Smart Recommendations */}
-        <SmartRecommendations
-          roofSize={roofSizeM2}
-          roofType={roofType}
-          includeSolar={includeSolar}
-          location={location}
-          totalCo2PerYear={totalCo2PerYear}
-          totalEnergyPerYear={totalEnergyPerYear}
-          totalInstallationCost={totalInstallationCost}
-          onRecommendationApply={handleRecommendationApply}
-        />
+        <div data-tour="smart-recommendations">
+          <SmartRecommendations
+            roofSize={roofSizeM2}
+            roofType={appState.roofType}
+            includeSolar={appState.includeSolar}
+            location={appState.location}
+            totalCo2PerYear={totalCo2PerYear}
+            totalEnergyPerYear={totalEnergyPerYear}
+            totalInstallationCost={totalInstallationCost}
+            onRecommendationApply={handleRecommendationApply}
+          />
+        </div>
 
         {/* Controls Section */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
@@ -251,11 +433,11 @@ export default function RoofImpactDashboard() {
           
           <div className="grid md:grid-cols-2 gap-8">
             {/* Roof Size Input */}
-            <div className="space-y-3">
+            <div className="space-y-3" data-tour="roof-size">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Estimated size of roof ({useMetric ? 'm²' : 'sq ft'})
+                    Estimated size of roof ({appState.useMetric ? 'm²' : 'sq ft'})
                   </label>
                   <HelpTooltip content="Enter the approximate size of your roof area. You can toggle between square meters (m²) and square feet (sq ft). Use the quick size buttons for common roof sizes, or enter a custom value." />
                 </div>
@@ -263,31 +445,34 @@ export default function RoofImpactDashboard() {
                   onClick={handleUnitToggle}
                   className="flex items-center space-x-2 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm"
                 >
-                  <span className={useMetric ? 'font-semibold text-green-600' : 'text-gray-500'}>m²</span>
-                  {useMetric ? <ToggleLeft className="w-4 h-4 text-green-600" /> : <ToggleRight className="w-4 h-4 text-gray-500" />}
-                  <span className={!useMetric ? 'font-semibold text-green-600' : 'text-gray-500'}>sq ft</span>
+                  <span className={appState.useMetric ? 'font-semibold text-green-600' : 'text-gray-500'}>m²</span>
+                  {appState.useMetric ? <ToggleLeft className="w-4 h-4 text-green-600" /> : <ToggleRight className="w-4 h-4 text-gray-500" />}
+                  <span className={!appState.useMetric ? 'font-semibold text-green-600' : 'text-gray-500'}>sq ft</span>
                 </button>
               </div>
               <div className="relative">
                 <input
                   type="number"
-                  value={roofSize}
-                  onChange={(e) => setRoofSize(Math.max(1, parseInt(e.target.value) || 1))}
+                  value={appState.roofSize}
+                  onChange={(e) => undoRedoActions.set({ 
+                    ...appState, 
+                    roofSize: Math.max(1, parseInt(e.target.value) || 1) 
+                  })}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-lg font-medium"
                   min="1"
-                  step={useMetric ? "50" : "500"}
+                  step={appState.useMetric ? "50" : "500"}
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-4">
-                  <span className="text-gray-500 text-sm font-medium">{useMetric ? 'm²' : 'sq ft'}</span>
+                  <span className="text-gray-500 text-sm font-medium">{appState.useMetric ? 'm²' : 'sq ft'}</span>
                 </div>
               </div>
               <div className="flex space-x-2">
                 {quickSizes.map((size) => (
                   <button
                     key={size}
-                    onClick={() => setRoofSize(size)}
+                    onClick={() => undoRedoActions.set({ ...appState, roofSize: size })}
                     className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      roofSize === size 
+                      appState.roofSize === size 
                         ? 'bg-green-100 text-green-700 border border-green-300' 
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
                     }`}
@@ -296,7 +481,7 @@ export default function RoofImpactDashboard() {
                   </button>
                 ))}
               </div>
-              {!useMetric && (
+              {!appState.useMetric && (
                 <div className="text-xs text-gray-500">
                   ≈ {Math.round(roofSizeM2).toLocaleString()} m² for calculations
                 </div>
@@ -304,7 +489,7 @@ export default function RoofImpactDashboard() {
             </div>
 
             {/* Roof Type Selection */}
-            <div className="space-y-3">
+            <div className="space-y-3" data-tour="roof-type">
               <div className="flex items-center space-x-2">
                 <label className="block text-sm font-medium text-gray-700">
                   Roof Type
@@ -315,9 +500,12 @@ export default function RoofImpactDashboard() {
                 {Object.entries(ROOF_TYPES).map(([type, typeData]) => (
                   <button
                     key={type}
-                    onClick={() => setRoofType(type as keyof typeof ROOF_TYPES)}
+                    onClick={() => undoRedoActions.set({ 
+                      ...appState, 
+                      roofType: type as keyof typeof ROOF_TYPES 
+                    })}
                     className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
-                      roofType === type
+                      appState.roofType === type
                         ? 'border-green-500 bg-green-50 shadow-md'
                         : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
                     }`}
@@ -349,7 +537,7 @@ export default function RoofImpactDashboard() {
           </div>
 
           {/* Solar Panel Option */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="mt-8 pt-6 border-t border-gray-200" data-tour="solar-panel-option">
             <div className="flex items-center justify-between p-6 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
               <div className="flex items-center space-x-4">
                 <div className="flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-xl">
@@ -365,12 +553,12 @@ export default function RoofImpactDashboard() {
                   </p>
                   <div className="mt-1 text-xs text-gray-500">
                     Performance factor: {(SOLAR_SPECS.performanceFactor * 100)}% • Degradation: {(SOLAR_SPECS.degradationRate * 100)}%/year
-                    {location && ` • Location adjusted: ${(locationMultiplier * 100).toFixed(0)}%`}
+                    {appState.location && ` • Location adjusted: ${(locationMultiplier * 100).toFixed(0)}%`}
                   </div>
-                  {includeSolar && (
+                  {appState.includeSolar && (
                     <div className="mt-2 text-sm text-yellow-700 font-medium">
                       Expected generation: {solarEnergyPerYear.toLocaleString()} kWh/year (Year 1)
-                      {location && ` • Irradiance: ${location.solarIrradiance} kWh/m²/year`}
+                      {appState.location && ` • Irradiance: ${appState.location.solarIrradiance} kWh/m²/year`}
                     </div>
                   )}
                 </div>
@@ -378,8 +566,11 @@ export default function RoofImpactDashboard() {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={includeSolar}
-                  onChange={(e) => setIncludeSolar(e.target.checked)}
+                  checked={appState.includeSolar}
+                  onChange={(e) => undoRedoActions.set({ 
+                    ...appState, 
+                    includeSolar: e.target.checked 
+                  })}
                   className="sr-only peer"
                 />
                 <div className="w-14 h-8 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-yellow-500"></div>
@@ -389,7 +580,7 @@ export default function RoofImpactDashboard() {
         </div>
 
         {/* Key Metrics Cards */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8" data-tour="key-metrics">
           <div className="flex items-center space-x-3 mb-6">
             <TrendingUp className="w-6 h-6 text-green-600" />
             <h2 className="text-xl font-semibold text-gray-900">Key Environmental & Financial Metrics</h2>
@@ -413,7 +604,7 @@ export default function RoofImpactDashboard() {
               </div>
               <div className="text-green-100 text-sm">
                 Carbon Offset Annual
-                {includeSolar && (
+                {appState.includeSolar && (
                   <div className="text-xs mt-1 opacity-80">
                     (incl. {solarCo2PerYear.toLocaleString()} kg from solar)
                   </div>
@@ -436,8 +627,8 @@ export default function RoofImpactDashboard() {
                 </div>
               </div>
               <div className="text-blue-100 text-sm">
-                {includeSolar ? 'Energy Generated + Saved' : 'Energy Savings'}
-                {includeSolar && (
+                {appState.includeSolar ? 'Energy Generated + Saved' : 'Energy Savings'}
+                {appState.includeSolar && (
                   <div className="text-xs mt-1 opacity-80">
                     ({solarEnergyPerYear.toLocaleString()} kWh solar generation)
                   </div>
@@ -503,7 +694,7 @@ export default function RoofImpactDashboard() {
               </div>
               <div className="text-emerald-100 text-sm">
                 Installation Investment
-                {includeSolar && (
+                {appState.includeSolar && (
                   <div className="text-xs mt-1 opacity-80">
                     (incl. €{solarCost.toLocaleString()} solar)
                   </div>
@@ -514,7 +705,7 @@ export default function RoofImpactDashboard() {
         </div>
 
         {/* Enhanced Charts Section */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8" data-tour="enhanced-charts">
           <div className="flex items-center space-x-3 mb-6">
             <TrendingUp className="w-6 h-6 text-blue-600" />
             <h2 className="text-xl font-semibold text-gray-900">Long-term Impact Analysis</h2>
@@ -522,12 +713,12 @@ export default function RoofImpactDashboard() {
           </div>
           <EnhancedCharts 
             chartData={chartData}
-            roofType={roofType}
-            includeSolar={includeSolar}
+            roofType={appState.roofType}
+            includeSolar={appState.includeSolar}
             totalCo2PerYear={totalCo2PerYear}
             totalEnergyPerYear={totalEnergyPerYear}
             noxPerYear={noxPerYear}
-            location={location}
+            location={appState.location}
           />
         </div>
 
@@ -578,7 +769,7 @@ export default function RoofImpactDashboard() {
         </div>
 
         {/* CTA Section */}
-        <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl shadow-xl p-8 text-white">
+        <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl shadow-xl p-8 text-white" data-tour="cta-section">
           <div className="text-center max-w-3xl mx-auto">
             <FileText className="w-12 h-12 mx-auto mb-4 opacity-90" />
             <h2 className="text-3xl font-bold mb-4">
@@ -630,7 +821,7 @@ export default function RoofImpactDashboard() {
                     <span className="text-gray-700">50-Year NOₓ Reduction</span>
                     <span className="font-semibold text-purple-700">{(noxPerYear * 50).toLocaleString()} kg</span>
                   </div>
-                  {includeSolar && (
+                  {appState.includeSolar && (
                     <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
                       <span className="text-gray-700">50-Year Solar Generation</span>
                       <span className="font-semibold text-yellow-700">{(solarEnergyPerYear * 25).toLocaleString()} kWh</span>
@@ -651,7 +842,7 @@ export default function RoofImpactDashboard() {
                     <span className="text-gray-700">Roof Installation Cost</span>
                     <span className="font-semibold text-emerald-700">€{(data.totalCost * roofSizeM2).toLocaleString()}</span>
                   </div>
-                  {includeSolar && (
+                  {appState.includeSolar && (
                     <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
                       <span className="text-gray-700">Solar Installation Cost</span>
                       <span className="font-semibold text-yellow-700">€{solarCost.toLocaleString()}</span>
@@ -694,7 +885,7 @@ export default function RoofImpactDashboard() {
                     <span className="text-gray-700">Energy Efficiency</span>
                     <span className="font-semibold text-gray-700">{data.energy} kWh/m²/year</span>
                   </div>
-                  {includeSolar && (
+                  {appState.includeSolar && (
                     <>
                       <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
                         <span className="text-gray-700">Solar Power Density</span>
@@ -730,7 +921,7 @@ export default function RoofImpactDashboard() {
               <div className="p-4 bg-blue-50 rounded-lg">
                 <p className="text-gray-700 text-sm leading-relaxed"><strong>Roof System:</strong> {data.maintenance}</p>
               </div>
-              {includeSolar && (
+              {appState.includeSolar && (
                 <div className="p-4 bg-yellow-50 rounded-lg">
                   <p className="text-gray-700 text-sm leading-relaxed">
                     <strong>Solar Panels:</strong> Clean panels twice yearly, inspect electrical connections annually. 
@@ -760,6 +951,27 @@ export default function RoofImpactDashboard() {
         onClose={() => setIsModalOpen(false)}
         calculatorData={calculatorData}
       />
+
+      {/* Guided Tour */}
+      <GuidedTour 
+        isActive={showTour}
+        onComplete={handleTourComplete}
+        onSkip={handleTourSkip}
+      />
+
+      {/* Keyboard Shortcuts Help */}
+      <KeyboardShortcutsHelp shortcuts={shortcuts} />
+
+      {/* Tour Highlight Styles */}
+      <style jsx global>{`
+        .tour-highlight {
+          position: relative;
+          z-index: 45;
+          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 0 8px rgba(59, 130, 246, 0.2);
+          border-radius: 12px;
+          transition: all 0.3s ease;
+        }
+      `}</style>
     </div>
   );
 }
