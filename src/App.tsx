@@ -6,11 +6,13 @@ import LocationSelector from './components/LocationSelector';
 import ProjectManager from './components/ProjectManager';
 import EnhancedCharts from './components/EnhancedCharts';
 import SmartRecommendations from './components/SmartRecommendations';
+import DetailedSolarAnalysis from './components/DetailedSolarAnalysis';
 import HelpTooltip from './components/HelpTooltip';
 import GuidedTour from './components/GuidedTour';
 import ProgressIndicator from './components/ProgressIndicator';
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
-import { Project, LocationData, ROOF_TYPES } from './types/project';
+import { Project, ROOF_TYPES } from './types/project';
+import { EnhancedLocationData } from './utils/pvgisApi';
 import { generateProjectId } from './utils/projectStorage';
 import { useUndoRedo } from './hooks/useUndoRedo';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -36,7 +38,7 @@ interface AppState {
   roofType: keyof typeof ROOF_TYPES;
   includeSolar: boolean;
   useMetric: boolean;
-  location: LocationData | null;
+  location: EnhancedLocationData | null;
 }
 
 export default function RoofImpactDashboard() {
@@ -76,15 +78,25 @@ export default function RoofImpactDashboard() {
   const noxPerYear = data.nox * roofSizeM2;
   const energyPerYear = data.energy * roofSizeM2;
 
-  // Adjust solar calculations based on location
-  const locationMultiplier = appState.location ? (appState.location.solarIrradiance / 1100) : 1; // 1100 is base irradiance
-  const adjustedSolarHours = SOLAR_SPECS.hoursPerDay * locationMultiplier;
+  // Enhanced solar calculations with PVGIS data
+  let locationMultiplier = 1;
+  let adjustedSolarHours = SOLAR_SPECS.hoursPerDay;
+  let solarEnergyPerYear = 0;
 
-  // Calculate annual solar generation (kWh/year) with performance factor and location adjustment
-  const solarEnergyPerYear = appState.includeSolar 
-    ? (SOLAR_SPECS.powerPerM2 * roofSizeM2 * adjustedSolarHours 
-        * SOLAR_SPECS.daysPerYear * SOLAR_SPECS.performanceFactor) / 1000 
-    : 0;  // kWh/year (includes derating for real conditions)
+  if (appState.includeSolar) {
+    if (appState.location && appState.location.pvSystemPotential) {
+      // Use PVGIS data for accurate calculations
+      const panelArea = roofSizeM2 * 0.7; // 70% of roof area usable
+      const systemCapacity = panelArea * 0.2; // 200W/m² = 0.2 kW/m²
+      solarEnergyPerYear = appState.location.pvSystemPotential.yearlyOutput * systemCapacity;
+    } else {
+      // Fallback to basic calculation
+      locationMultiplier = appState.location ? (appState.location.solarIrradiance / 1100) : 1;
+      adjustedSolarHours = SOLAR_SPECS.hoursPerDay * locationMultiplier;
+      solarEnergyPerYear = (SOLAR_SPECS.powerPerM2 * roofSizeM2 * adjustedSolarHours 
+          * SOLAR_SPECS.daysPerYear * SOLAR_SPECS.performanceFactor) / 1000;
+    }
+  }
 
   const solarCo2PerYear = appState.includeSolar ? solarEnergyPerYear * SOLAR_SPECS.co2PerKwh : 0;
   const solarCost = appState.includeSolar ? SOLAR_SPECS.costPerM2 * roofSizeM2 : 0;
@@ -278,7 +290,7 @@ export default function RoofImpactDashboard() {
       roofType: project.roofType,
       includeSolar: project.includeSolar,
       useMetric: project.useMetric,
-      location: project.location || null
+      location: project.location as EnhancedLocationData || null
     };
     undoRedoActions.set(newState);
     setCurrentProject(project);
@@ -400,14 +412,22 @@ export default function RoofImpactDashboard() {
 
         {/* Location Selector */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8" data-tour="location-selector">
-          <div className="flex items-center space-x-3 mb-4">
-            <HelpTooltip content="Location affects solar panel efficiency and climate-specific benefits. Enter your building's location to get more accurate calculations based on local solar irradiance, climate zone, and temperature ranges." />
-          </div>
           <LocationSelector 
             location={appState.location}
             onLocationChange={(location) => undoRedoActions.set({ ...appState, location })}
           />
         </div>
+
+        {/* Detailed Solar Analysis */}
+        {appState.location && (
+          <div data-tour="detailed-solar-analysis">
+            <DetailedSolarAnalysis
+              location={appState.location}
+              roofSize={roofSizeM2}
+              includeSolar={appState.includeSolar}
+            />
+          </div>
+        )}
 
         {/* Smart Recommendations */}
         <div data-tour="smart-recommendations">
@@ -553,12 +573,12 @@ export default function RoofImpactDashboard() {
                   </p>
                   <div className="mt-1 text-xs text-gray-500">
                     Performance factor: {(SOLAR_SPECS.performanceFactor * 100)}% • Degradation: {(SOLAR_SPECS.degradationRate * 100)}%/year
-                    {appState.location && ` • Location adjusted: ${(locationMultiplier * 100).toFixed(0)}%`}
+                    {appState.location && appState.location.dataSource === 'pvgis' && ` • PVGIS optimized`}
                   </div>
                   {appState.includeSolar && (
                     <div className="mt-2 text-sm text-yellow-700 font-medium">
-                      Expected generation: {solarEnergyPerYear.toLocaleString()} kWh/year (Year 1)
-                      {appState.location && ` • Irradiance: ${appState.location.solarIrradiance} kWh/m²/year`}
+                      Expected generation: {solarEnergyPerYear.toLocaleString()} kWh/year
+                      {appState.location && appState.location.dataSource === 'pvgis' && ` (PVGIS data)`}
                     </div>
                   )}
                 </div>
@@ -927,6 +947,7 @@ export default function RoofImpactDashboard() {
                     <strong>Solar Panels:</strong> Clean panels twice yearly, inspect electrical connections annually. 
                     Expected maintenance cost: €{(SOLAR_SPECS.maintenanceCost * roofSizeM2).toLocaleString()}/year.
                     Performance degrades by {(SOLAR_SPECS.degradationRate * 100)}% annually.
+                    {appState.location && appState.location.dataSource === 'pvgis' && ' PVGIS data provides location-specific optimization.'}
                   </p>
                 </div>
               )}
