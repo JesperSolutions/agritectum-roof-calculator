@@ -6,6 +6,7 @@ import LocationSelector from './components/LocationSelector';
 import ProjectManager from './components/ProjectManager';
 import EnhancedCharts from './components/EnhancedCharts';
 import SmartRecommendations from './components/SmartRecommendations';
+import CustomRoofDesigner from './components/CustomRoofDesigner';
 import HelpTooltip from './components/HelpTooltip';
 import GuidedTour from './components/GuidedTour';
 import ProgressIndicator from './components/ProgressIndicator';
@@ -41,32 +42,6 @@ interface AppState {
   useMetric: boolean;
   location: LocationData | null;
   userRole: UserRole;
-}
-
-// Simple CustomRoofDesigner component to replace the missing one
-function CustomRoofDesigner({ roofSize, location }: { roofSize: number; location?: LocationData }) {
-  return (
-    <div className="bg-gray-50 rounded-xl p-8 text-center">
-      <Settings className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">Custom Roof Designer</h3>
-      <p className="text-gray-600 mb-4">
-        Design custom mixed-use roof configurations with multiple sustainable elements.
-      </p>
-      <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-        <div>
-          <span className="font-medium">Roof Size:</span> {roofSize.toLocaleString()} m²
-        </div>
-        {location && (
-          <div>
-            <span className="font-medium">Location:</span> {location.country}
-          </div>
-        )}
-      </div>
-      <button className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-        Launch Designer
-      </button>
-    </div>
-  );
 }
 
 export default function RoofImpactDashboard() {
@@ -606,20 +581,6 @@ export default function RoofImpactDashboard() {
               </div>
             )}
 
-            {/* Smart Recommendations */}
-            <div data-tour="smart-recommendations">
-              <SmartRecommendations
-                roofSize={roofSizeM2}
-                roofType={appState.roofType}
-                includeSolar={appState.includeSolar}
-                location={appState.location}
-                totalCo2PerYear={totalCo2PerYear}
-                totalEnergyPerYear={totalEnergyPerYear}
-                totalInstallationCost={totalInstallationCost}
-                onRecommendationApply={handleRecommendationApply}
-              />
-            </div>
-
             {/* CTA Section */}
             <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl shadow-xl p-8 text-white" data-tour="cta-section">
               <div className="text-center max-w-3xl mx-auto">
@@ -673,6 +634,17 @@ export default function RoofImpactDashboard() {
 
       {/* Keyboard Shortcuts Help */}
       <KeyboardShortcutsHelp shortcuts={shortcuts} />
+
+      {/* Tour Highlight Styles */}
+      <style jsx global>{`
+        .tour-highlight {
+          position: relative;
+          z-index: 45;
+          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 0 8px rgba(59, 130, 246, 0.2);
+          border-radius: 12px;
+          transition: all 0.3s ease;
+        }
+      `}</style>
     </div>
   );
 }
