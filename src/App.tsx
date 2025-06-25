@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
 import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun, FileText, ToggleLeft, ToggleRight, Save, FolderOpen, HelpCircle, Undo, Redo, Play, Settings } from 'lucide-react';
-import LeadCaptureModal from './components/LeadCaptureModal';
+import EnhancedLeadCaptureModal from './components/EnhancedLeadCaptureModal';
 import LocationSelector from './components/LocationSelector';
 import ProjectManager from './components/ProjectManager';
 import EnhancedCharts from './components/EnhancedCharts';
@@ -67,6 +67,7 @@ export default function RoofImpactDashboard() {
   const [showTour, setShowTour] = useState(false);
   const [hasSeenTour, setHasSeenTour] = useState(false);
   const [activeMainTab, setActiveMainTab] = useState<'standard' | 'custom'>('standard');
+  const [sessionStartTime] = useState(new Date());
 
   // Check if user has seen the tour before
   useEffect(() => {
@@ -266,7 +267,7 @@ export default function RoofImpactDashboard() {
     color: typeData.color
   }));
 
-  // Calculator data for the modal
+  // Enhanced calculator data for the modal
   const calculatorData = {
     roofSize: roofSizeM2, // Always pass m² to modal
     roofSizeDisplay: appState.roofSize, // Display value in current unit
@@ -278,7 +279,13 @@ export default function RoofImpactDashboard() {
     noxPerYear,
     neutralYear,
     totalInstallationCost,
-    solarEnergyPerYear
+    solarEnergyPerYear,
+    installationDays,
+    annualSavings,
+    paybackYears,
+    maintenanceCost,
+    location: appState.location,
+    useMetric: appState.useMetric
   };
 
   // Handle unit conversion when toggling
@@ -561,6 +568,7 @@ export default function RoofImpactDashboard() {
                           name === 'co2Offset' ? 'Annual CO₂ Offset' : 'Total Installation Cost'
                         ]}
                       />
+                      <Legend />
                       <Bar 
                         yAxisId="left"
                         dataKey="co2Offset" 
@@ -617,11 +625,13 @@ export default function RoofImpactDashboard() {
         </div>
       </div>
 
-      {/* Lead Capture Modal */}
-      <LeadCaptureModal 
+      {/* Enhanced Lead Capture Modal */}
+      <EnhancedLeadCaptureModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         calculatorData={calculatorData}
+        userRole={appState.userRole}
+        sessionStartTime={sessionStartTime}
       />
 
       {/* Guided Tour */}
