@@ -187,19 +187,21 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
     setInputValue(formData.roofSize.toString());
   }, [formData.roofSize]);
 
-  // Handle roof size input change - completely free typing
+  // Handle roof size input change - completely free typing, NO form updates
   const handleRoofSizeChange = (value: string) => {
     setInputValue(value);
     // Clear any existing errors when user starts typing
     if (inputErrors.roofSize) {
       setInputErrors(prev => ({ ...prev, roofSize: '' }));
     }
+    // DO NOT call onFormChange here - this was causing the focus loss!
   };
 
   // Handle quick size selection
   const handleQuickSizeSelect = (size: number) => {
     setInputValue(size.toString());
     setInputErrors(prev => ({ ...prev, roofSize: '' }));
+    // Only update form data for quick selections
     onFormChange({ 
       ...formData, 
       roofSize: size 
@@ -212,7 +214,7 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
     onUnitToggle();
   };
 
-  // Handle input blur - validate and update form data
+  // Handle input blur - validate and update form data ONLY when user is done
   const handleRoofSizeBlur = () => {
     const validation = validateRoofSize(inputValue, formData.useMetric);
     
@@ -221,7 +223,7 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
       return;
     }
 
-    // Update form data with validated value
+    // Only NOW update the form data when user is completely done typing
     if (validation.sanitizedValue !== undefined) {
       onFormChange({ 
         ...formData, 
