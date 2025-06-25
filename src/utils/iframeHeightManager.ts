@@ -7,8 +7,13 @@ export class IframeHeightManager {
   private static instance: IframeHeightManager;
   private observers: ResizeObserver[] = [];
   private lastHeight = 0;
+  private lastSentHeight = 0;
   private debounceTimer: number | null = null;
-  private isDebugMode = true; // Enable debug logging
+  private isDebugMode = false; // Disable debug by default
+  private isUpdatingHeight = false; // Prevent feedback loops
+  private stableHeightCount = 0;
+  private readonly STABLE_HEIGHT_THRESHOLD = 3;
+  private readonly HEIGHT_CHANGE_THRESHOLD = 20;
 
   static getInstance(): IframeHeightManager {
     if (!IframeHeightManager.instance) {
@@ -33,18 +38,18 @@ export class IframeHeightManager {
     // Send initial height when page loads
     window.addEventListener('load', () => {
       this.log('Window loaded, sending height');
-      setTimeout(() => this.sendHeight(), 500);
+      setTimeout(() => this.sendHeight(), 1000);
     });
 
     // Send height when DOM content is loaded
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         this.log('DOM content loaded, sending height');
-        setTimeout(() => this.sendHeight(), 500);
+        setTimeout(() => this.sendHeight(), 1000);
       });
     } else {
       this.log('DOM already loaded, sending height immediately');
-      setTimeout(() => this.sendHeight(), 100);
+      setTimeout(() => this.sendHeight(), 500);
     }
 
     // Listen for height requests from parent
@@ -60,61 +65,109 @@ export class IframeHeightManager {
     this.setupResizeObserver();
     this.setupMutationObserver();
 
-    // Periodic height updates as fallback
+    // Less frequent periodic updates
     setInterval(() => {
-      this.sendHeight();
-    }, 5000); // Every 5 seconds
+      if (!this.isUpdatingHeight) {
+        this.sendHeight();
+      }
+    }, 30000); // Every 30 seconds
   }
 
-  private calculateHeight(): number {
-    // Get the maximum height from different measurements
+  private calculateContentHeight(): number {
+    // Get the actual content height without iframe-induced changes
     const body = document.body;
     const html = document.documentElement;
 
-    const measurements = {
-      bodyScrollHeight: body.scrollHeight,
-      bodyOffsetHeight: body.offsetHeight,
-      htmlClientHeight: html.clientHeight,
-      htmlScrollHeight: html.scrollHeight,
-      htmlOffsetHeight: html.offsetHeight,
-      windowInnerHeight: window.innerHeight,
-      documentHeight: Math.max(
-        body.scrollHeight, body.offsetHeight,
-        html.clientHeight, html.scrollHeight, html.offsetHeight
-      )
-    };
+    // Get all major content containers
+    const containers = [
+      document.querySelector('#root'),
+      document.querySelector('.main-content'),
+      document.querySelector('[data-reactroot]'),
+      body
+    ].filter(Boolean) as Element[];
 
-    this.log('Height measurements:', measurements);
+    let maxContentHeight = 0;
 
-    // Use the maximum of all measurements, but add some padding
-    const maxHeight = Math.max(...Object.values(measurements));
-    const paddedHeight = maxHeight + 100; // Add 100px padding
+    // Calculate height based on actual content, not iframe dimensions
+    containers.forEach(container => {
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        const scrollHeight = container.scrollHeight;
+        const offsetHeight = (container as HTMLElement).offsetHeight;
+        
+        // Use the maximum of these measurements
+        const containerHeight = Math.max(rect.height, scrollHeight, offsetHeight);
+        maxContentHeight = Math.max(maxContentHeight, containerHeight);
+      }
+    });
 
-    this.log(`Calculated height: ${maxHeight}px (with padding: ${paddedHeight}px)`);
+    // Fallback to document measurements if containers don't give good results
+    if (maxContentHeight < 100) {
+      maxContentHeight = Math.max(
+        body.scrollHeight,
+        body.offsetHeight,
+        html.scrollHeight,
+        html.offsetHeight
+      );
+    }
+
+    // Add minimal padding for safety (much less than before)
+    const paddedHeight = maxContentHeight + 50;
+
+    this.log(`Content height calculation: ${maxContentHeight}px (with padding: ${paddedHeight}px)`);
     
-    return paddedHeight;
+    return Math.round(paddedHeight);
   }
 
   private sendHeight(): void {
-    const currentHeight = this.calculateHeight();
-    
-    // Always send height, even if it hasn't changed much (for debugging)
-    if (Math.abs(currentHeight - this.lastHeight) > 5 || this.isDebugMode) {
-      this.lastHeight = currentHeight;
-      
-      const message: HeightMessage = {
-        iframeHeight: currentHeight,
-        type: 'height-update'
-      };
-
-      // Send to parent window
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage(message, '*');
-        this.log(`Height sent to parent: ${currentHeight}px`);
-      } else {
-        this.log('No parent window found - running standalone');
-      }
+    if (this.isUpdatingHeight) {
+      this.log('Height update in progress, skipping');
+      return;
     }
+
+    const currentHeight = this.calculateContentHeight();
+    
+    // Only send if height has changed significantly
+    const heightDifference = Math.abs(currentHeight - this.lastSentHeight);
+    
+    if (heightDifference < this.HEIGHT_CHANGE_THRESHOLD) {
+      this.stableHeightCount++;
+      this.log(`Height stable (${this.stableHeightCount}/${this.STABLE_HEIGHT_THRESHOLD}): ${currentHeight}px`);
+      
+      // If height has been stable for several checks, stop sending updates
+      if (this.stableHeightCount >= this.STABLE_HEIGHT_THRESHOLD) {
+        return;
+      }
+    } else {
+      this.stableHeightCount = 0;
+    }
+
+    // Prevent sending the same height repeatedly
+    if (currentHeight === this.lastSentHeight) {
+      this.log(`Same height as last sent (${currentHeight}px), skipping`);
+      return;
+    }
+
+    this.isUpdatingHeight = true;
+    this.lastSentHeight = currentHeight;
+    
+    const message: HeightMessage = {
+      iframeHeight: currentHeight,
+      type: 'height-update'
+    };
+
+    // Send to parent window
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage(message, '*');
+      this.log(`Height sent to parent: ${currentHeight}px`);
+    } else {
+      this.log('No parent window found - running standalone');
+    }
+
+    // Reset the updating flag after a short delay
+    setTimeout(() => {
+      this.isUpdatingHeight = false;
+    }, 1000);
   }
 
   private debouncedSendHeight(): void {
@@ -125,13 +178,12 @@ export class IframeHeightManager {
     this.debounceTimer = window.setTimeout(() => {
       this.log('Debounced height update triggered');
       this.sendHeight();
-    }, 250); // Increased debounce time
+    }, 500); // Longer debounce time
   }
 
   private setupContentObserver(): void {
     // Monitor for content changes that might affect height
     const targetElements = [
-      document.body,
       document.querySelector('#root'),
       document.querySelector('.main-content')
     ].filter(Boolean) as Element[];
@@ -141,8 +193,16 @@ export class IframeHeightManager {
     targetElements.forEach((element, index) => {
       if (element) {
         const observer = new ResizeObserver((entries) => {
-          this.log(`ResizeObserver triggered for element ${index}`, entries[0]?.contentRect);
-          this.debouncedSendHeight();
+          // Only trigger if the size change is significant and not from iframe resizing
+          const entry = entries[0];
+          if (entry && !this.isUpdatingHeight) {
+            const heightChange = Math.abs(entry.contentRect.height - this.lastHeight);
+            if (heightChange > this.HEIGHT_CHANGE_THRESHOLD) {
+              this.log(`Significant content resize detected for element ${index}: ${heightChange}px change`);
+              this.lastHeight = entry.contentRect.height;
+              this.debouncedSendHeight();
+            }
+          }
         });
         observer.observe(element);
         this.observers.push(observer);
@@ -151,29 +211,49 @@ export class IframeHeightManager {
   }
 
   private setupResizeObserver(): void {
-    // Monitor window resize
+    // Only monitor window resize if it's not caused by our own height updates
+    let resizeTimeout: number;
     window.addEventListener('resize', () => {
-      this.log('Window resize detected');
-      this.debouncedSendHeight();
+      if (!this.isUpdatingHeight) {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = window.setTimeout(() => {
+          this.log('Window resize detected (not from height update)');
+          this.debouncedSendHeight();
+        }, 1000);
+      }
     });
   }
 
   private setupMutationObserver(): void {
     // Monitor DOM changes that might affect height
     const observer = new MutationObserver((mutations) => {
+      if (this.isUpdatingHeight) return;
+
       let shouldUpdate = false;
       
       mutations.forEach(mutation => {
-        // Check if the mutation might affect layout
-        if (mutation.type === 'childList' || 
-            (mutation.type === 'attributes' && 
-            ['style', 'class', 'hidden'].includes(mutation.attributeName || ''))) {
-          shouldUpdate = true;
+        // Only care about significant DOM changes
+        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+          // Check if added nodes are significant (not just text nodes)
+          const significantNodes = Array.from(mutation.addedNodes).filter(node => 
+            node.nodeType === Node.ELEMENT_NODE && 
+            (node as Element).getBoundingClientRect().height > 10
+          );
+          if (significantNodes.length > 0) {
+            shouldUpdate = true;
+          }
+        } else if (mutation.type === 'attributes' && 
+                   ['style', 'class'].includes(mutation.attributeName || '')) {
+          // Only care about style/class changes that might affect layout
+          const target = mutation.target as Element;
+          if (target && target.getBoundingClientRect().height > 10) {
+            shouldUpdate = true;
+          }
         }
       });
 
       if (shouldUpdate) {
-        this.log(`MutationObserver triggered (${mutations.length} mutations)`);
+        this.log(`Significant DOM mutation detected`);
         this.debouncedSendHeight();
       }
     });
@@ -191,6 +271,7 @@ export class IframeHeightManager {
   // Manual trigger for specific events
   public triggerHeightUpdate(): void {
     this.log('Manual height update triggered');
+    this.stableHeightCount = 0; // Reset stability counter
     this.sendHeight();
   }
 
@@ -198,6 +279,19 @@ export class IframeHeightManager {
   public setDebugMode(enabled: boolean): void {
     this.isDebugMode = enabled;
     this.log(`Debug mode ${enabled ? 'enabled' : 'disabled'}`);
+  }
+
+  // Reset the manager state
+  public reset(): void {
+    this.log('Resetting iframe height manager');
+    this.lastHeight = 0;
+    this.lastSentHeight = 0;
+    this.stableHeightCount = 0;
+    this.isUpdatingHeight = false;
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = null;
+    }
   }
 
   // Cleanup method
