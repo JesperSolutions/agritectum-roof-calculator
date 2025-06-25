@@ -9,11 +9,13 @@ import SmartRecommendations from './components/SmartRecommendations';
 import CustomRoofDesigner from './components/CustomRoofDesigner';
 import HelpTooltip from './components/HelpTooltip';
 import GuidedTour from './components/GuidedTour';
-import ProgressIndicator from './components/ProgressIndicator';
+import CompactProgressIndicator from './components/CompactProgressIndicator';
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
 import UserRoleSelector, { UserRole } from './components/UserRoleSelector';
 import AdaptiveMetricsDisplay from './components/AdaptiveMetricsDisplay';
 import AdaptiveInputForm from './components/AdaptiveInputForm';
+import StreamlinedHeader from './components/StreamlinedHeader';
+import RoleBasedContentTemplate from './components/RoleBasedContentTemplate';
 import { Project, LocationData, ROOF_TYPES } from './types/project';
 import { generateProjectId } from './utils/projectStorage';
 import { useUndoRedo } from './hooks/useUndoRedo';
@@ -379,61 +381,53 @@ export default function RoofImpactDashboard() {
     maintenanceCost
   };
 
+  // Progress calculation for header
+  const completedSteps = progressSteps.filter(step => step.status === 'completed').length;
+  const totalSteps = progressSteps.length;
+  const progressPercentage = Math.round((completedSteps / totalSteps) * 100);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-green-100" data-tour="header">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-20 h-12">
-                <img
-                  src="/logo.webp"
-                  alt="Agritectum logo"
-                  className="w-full h-full object-contain rounded-xl"
-                />
-              </div>
-            </div>
-            
-            {/* Header Actions */}
-            <div className="flex items-center space-x-4">
-              {/* Undo/Redo Buttons */}
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={undoRedoActions.undo}
-                  disabled={!undoRedoActions.canUndo}
-                  className="p-2 text-gray-600 hover:text-gray-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
-                  title="Undo (Ctrl+Z)"
-                >
-                  <Undo className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={undoRedoActions.redo}
-                  disabled={!undoRedoActions.canRedo}
-                  className="p-2 text-gray-600 hover:text-gray-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
-                  title="Redo (Ctrl+Y)"
-                >
-                  <Redo className="w-5 h-5" />
-                </button>
-              </div>
+      {/* Streamlined Header */}
+      <StreamlinedHeader
+        title="Roof Impact Calculator"
+        subtitle="Sustainable roofing solutions analysis"
+        progress={{
+          current: completedSteps,
+          total: totalSteps,
+          percentage: progressPercentage
+        }}
+        actions={{
+          primary: {
+            label: 'Get Report',
+            onClick: () => setIsModalOpen(true),
+            icon: FileText
+          },
+          secondary: [
+            {
+              label: 'Save Project',
+              onClick: () => {
+                const saveButton = document.querySelector('[data-action="save-project"]') as HTMLButtonElement;
+                saveButton?.click();
+              },
+              icon: Save
+            },
+            {
+              label: 'Start Tour',
+              onClick: () => setShowTour(true),
+              icon: Play
+            },
+            {
+              label: 'Settings',
+              onClick: () => {},
+              icon: Settings
+            }
+          ]
+        }}
+        compact={false}
+      />
 
-              {/* Tour Button */}
-              {hasSeenTour && (
-                <button
-                  onClick={() => setShowTour(true)}
-                  className="flex items-center space-x-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
-                  title="Start Guided Tour (Ctrl+T)"
-                >
-                  <Play className="w-4 h-4" />
-                  <span className="hidden sm:inline">Tour</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         {/* User Role Selection */}
         <UserRoleSelector 
           selectedRole={appState.userRole}
@@ -443,100 +437,119 @@ export default function RoofImpactDashboard() {
         {/* Only show content if user has selected a role */}
         {appState.userRole && (
           <>
-            {/* Progress Indicator */}
-            <ProgressIndicator steps={progressSteps} currentStep={currentStepId} />
-
-            {/* Adaptive Input Form */}
-            <AdaptiveInputForm
-              userRole={appState.userRole}
-              formData={appState}
-              onFormChange={handleFormChange}
-              onUnitToggle={handleUnitToggle}
+            {/* Compact Progress Indicator */}
+            <CompactProgressIndicator 
+              steps={progressSteps} 
+              currentStep={currentStepId}
+              variant="compact"
             />
 
-            {/* Project Management */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8" data-tour="project-management">
-              <div className="flex items-center space-x-3 mb-6">
-                <FolderOpen className="w-6 h-6 text-purple-600" />
-                <h2 className="text-xl font-semibold text-gray-900">Project Management</h2>
-                <HelpTooltip content="Save your current roof configuration as a project to compare different scenarios or return to later. You can manage multiple projects and track your progress through the decision-making process." />
-              </div>
-              <ProjectManager 
-                currentProject={currentProject}
-                onProjectLoad={handleProjectLoad}
-                onNewProject={handleNewProject}
-              />
-            </div>
-
-            {/* Adaptive Metrics Display */}
-            <AdaptiveMetricsDisplay
+            {/* Role-Based Content Template */}
+            <RoleBasedContentTemplate
               userRole={appState.userRole}
-              metrics={adaptiveMetrics}
-              roofType={appState.roofType}
-              includeSolar={appState.includeSolar}
+              layout="grid"
+              sections={[
+                {
+                  id: 'input-form',
+                  title: 'Configuration',
+                  icon: Calculator,
+                  priority: 1,
+                  content: (
+                    <AdaptiveInputForm
+                      userRole={appState.userRole}
+                      formData={appState}
+                      onFormChange={handleFormChange}
+                      onUnitToggle={handleUnitToggle}
+                    />
+                  )
+                },
+                {
+                  id: 'metrics',
+                  title: 'Key Metrics',
+                  icon: TrendingUp,
+                  priority: 2,
+                  content: (
+                    <AdaptiveMetricsDisplay
+                      userRole={appState.userRole}
+                      metrics={adaptiveMetrics}
+                      roofType={appState.roofType}
+                      includeSolar={appState.includeSolar}
+                    />
+                  )
+                },
+                {
+                  id: 'project-management',
+                  title: 'Project Management',
+                  icon: FolderOpen,
+                  priority: 3,
+                  compact: true,
+                  content: (
+                    <ProjectManager 
+                      currentProject={currentProject}
+                      onProjectLoad={handleProjectLoad}
+                      onNewProject={handleNewProject}
+                    />
+                  )
+                },
+                {
+                  id: 'charts',
+                  title: 'Analysis Tools',
+                  icon: TrendingUp,
+                  priority: 4,
+                  content: (
+                    <div className="space-y-6">
+                      {/* Mode Selector */}
+                      <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
+                        <button
+                          onClick={() => setActiveMainTab('standard')}
+                          className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                            activeMainTab === 'standard'
+                              ? 'bg-white text-green-600 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          <Calculator className="w-4 h-4" />
+                          <span>Enhanced Charts</span>
+                        </button>
+                        <button
+                          onClick={() => setActiveMainTab('custom')}
+                          className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                            activeMainTab === 'custom'
+                              ? 'bg-white text-green-600 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          <Settings className="w-4 h-4" />
+                          <span>Custom Designer</span>
+                        </button>
+                      </div>
+
+                      {/* Content */}
+                      {activeMainTab === 'standard' ? (
+                        <EnhancedCharts 
+                          chartData={chartData}
+                          roofType={appState.roofType}
+                          includeSolar={appState.includeSolar}
+                          totalCo2PerYear={totalCo2PerYear}
+                          totalEnergyPerYear={totalEnergyPerYear}
+                          noxPerYear={noxPerYear}
+                          location={appState.location}
+                        />
+                      ) : (
+                        <CustomRoofDesigner 
+                          roofSize={roofSizeM2} 
+                          location={appState.location || undefined}
+                        />
+                      )}
+                    </div>
+                  )
+                }
+              ]}
             />
-
-            {/* Main Calculator Mode Selector */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-              <div className="flex items-center space-x-3 mb-6">
-                <Calculator className="w-6 h-6 text-green-600" />
-                <h2 className="text-xl font-semibold text-gray-900">Advanced Analysis Tools</h2>
-                <HelpTooltip content="Choose between standard roof configurations or design a custom mixed-use roof with multiple elements. The custom designer allows percentage-based allocation of different roof technologies." />
-              </div>
-
-              {/* Mode Selector */}
-              <div className="flex space-x-1 bg-gray-100 rounded-lg p-1 mb-8">
-                <button
-                  onClick={() => setActiveMainTab('standard')}
-                  className={`flex-1 flex items-center justify-center space-x-2 px-6 py-3 rounded-md text-sm font-medium transition-colors ${
-                    activeMainTab === 'standard'
-                      ? 'bg-white text-green-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Calculator className="w-4 h-4" />
-                  <span>Enhanced Charts</span>
-                </button>
-                <button
-                  onClick={() => setActiveMainTab('custom')}
-                  className={`flex-1 flex items-center justify-center space-x-2 px-6 py-3 rounded-md text-sm font-medium transition-colors ${
-                    activeMainTab === 'custom'
-                      ? 'bg-white text-green-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Settings className="w-4 h-4" />
-                  <span>Custom Roof Designer</span>
-                </button>
-              </div>
-
-              {/* Enhanced Charts */}
-              {activeMainTab === 'standard' && (
-                <div data-tour="enhanced-charts">
-                  <EnhancedCharts 
-                    chartData={chartData}
-                    roofType={appState.roofType}
-                    includeSolar={appState.includeSolar}
-                    totalCo2PerYear={totalCo2PerYear}
-                    totalEnergyPerYear={totalEnergyPerYear}
-                    noxPerYear={noxPerYear}
-                    location={appState.location}
-                  />
-                </div>
-              )}
-
-              {/* Custom Roof Designer */}
-              {activeMainTab === 'custom' && (
-                <CustomRoofDesigner 
-                  roofSize={roofSizeM2} 
-                  location={appState.location || undefined}
-                />
-              )}
-            </div>
 
             {/* Simple Comparison Chart - Only for standard mode */}
             {activeMainTab === 'standard' && (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center space-x-3 mb-6">
                   <Info className="w-6 h-6 text-blue-600" />
                   <h3 className="text-xl font-semibold text-gray-900">Roof Type Comparison</h3>
@@ -561,6 +574,7 @@ export default function RoofImpactDashboard() {
                           name === 'co2Offset' ? 'Annual CO₂ Offset' : 'Total Installation Cost'
                         ]}
                       />
+                      <Legend />
                       <Bar 
                         yAxisId="left"
                         dataKey="co2Offset" 
@@ -583,22 +597,22 @@ export default function RoofImpactDashboard() {
             )}
 
             {/* CTA Section */}
-            <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl shadow-xl p-8 text-white" data-tour="cta-section">
-              <div className="text-center max-w-3xl mx-auto">
-                <FileText className="w-12 h-12 mx-auto mb-4 opacity-90" />
-                <h2 className="text-3xl font-bold mb-4">
+            <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-xl shadow-lg p-6 text-white" data-tour="cta-section">
+              <div className="text-center max-w-2xl mx-auto">
+                <FileText className="w-10 h-10 mx-auto mb-3 opacity-90" />
+                <h2 className="text-2xl font-bold mb-3">
                   Ready to Transform Your Roof?
                 </h2>
-                <p className="text-xl text-green-100 mb-8">
+                <p className="text-lg text-green-100 mb-6">
                   Get a personalized assessment and detailed report based on your specific building and requirements.
                 </p>
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="bg-white text-green-700 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-green-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                  className="bg-white text-green-700 px-6 py-3 rounded-lg font-semibold hover:bg-green-50 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                 >
                   Get Your Personal Roof Assessment
                 </button>
-                <p className="text-sm text-green-200 mt-4">
+                <p className="text-sm text-green-200 mt-3">
                   Free consultation • No commitment • Expert guidance
                 </p>
               </div>
@@ -607,7 +621,7 @@ export default function RoofImpactDashboard() {
         )}
 
         {/* Footer */}
-        <div className="text-center py-8">
+        <div className="text-center py-6">
           <p className="text-gray-600 text-sm">
             © 2025 Agritectum - Sustainable Building Solutions | 
             <a href="mailto:jesper.aggerholm@agritectum.com" className="text-green-600 hover:text-green-700 ml-1">
