@@ -1,27 +1,7 @@
-import { useEffect, useRef } from 'react';
-import { iframeHeightManager } from '../utils/iframeHeightManager';
-
+// Simplified hook - no longer manages iframe height
 export function useIframeHeight() {
-  const heightUpdateRef = useRef<() => void>();
-
-  useEffect(() => {
-    // Create a function to manually trigger height updates
-    heightUpdateRef.current = () => {
-      iframeHeightManager.triggerHeightUpdate();
-    };
-
-    // Trigger height update when component mounts
-    const timer = setTimeout(() => {
-      iframeHeightManager.triggerHeightUpdate();
-    }, 100);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, []);
-
-  // Return function to manually trigger height updates
+  // Return empty function since we're not managing height anymore
   return {
-    updateHeight: () => heightUpdateRef.current?.()
+    updateHeight: () => {}
   };
 }
