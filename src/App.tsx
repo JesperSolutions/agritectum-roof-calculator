@@ -18,6 +18,7 @@ import { Project, LocationData, ROOF_TYPES } from './types/project';
 import { generateProjectId } from './utils/projectStorage';
 import { useUndoRedo } from './hooks/useUndoRedo';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useIframeHeight } from './hooks/useIframeHeight';
 
 // Add realistic performance and degradation factors to SOLAR_SPECS
 const SOLAR_SPECS = {
@@ -45,6 +46,9 @@ interface AppState {
 }
 
 export default function RoofImpactDashboard() {
+  // Initialize iframe height management
+  const { updateHeight } = useIframeHeight();
+
   // Undo/Redo state management
   const [appState, undoRedoActions] = useUndoRedo<AppState>({
     roofSize: 1000,
@@ -72,6 +76,11 @@ export default function RoofImpactDashboard() {
     }
     setHasSeenTour(!!tourSeen);
   }, []);
+
+  // Update iframe height when content changes
+  useEffect(() => {
+    updateHeight();
+  }, [appState, isModalOpen, showTour, activeMainTab, updateHeight]);
 
   const data = ROOF_TYPES[appState.roofType];
 
