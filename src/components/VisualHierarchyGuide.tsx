@@ -1,5 +1,5 @@
 import React from 'react';
-import { Type, Palette, Layout, Spacing } from 'lucide-react';
+import { Type, Palette, Layout, Space as Spacing } from 'lucide-react';
 
 export default function VisualHierarchyGuide() {
   return (
