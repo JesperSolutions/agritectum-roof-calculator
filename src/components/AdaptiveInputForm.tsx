@@ -187,9 +187,10 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
     setInputValue(formData.roofSize.toString());
   }, [formData.roofSize]);
 
-  // Handle roof size input change - completely free typing, NO form updates during typing
-  const handleRoofSizeChange = (value: string) => {
-    // Allow only numbers and decimal point
+  // Handle roof size input change - allow free typing
+  const handleRoofSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow numbers, decimal point, and empty string
     const sanitizedValue = value.replace(/[^\d.]/g, '');
     setInputValue(sanitizedValue);
     
@@ -197,14 +198,13 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
     if (inputErrors.roofSize) {
       setInputErrors(prev => ({ ...prev, roofSize: '' }));
     }
-    // CRITICAL: DO NOT call onFormChange here - this was causing the focus loss!
   };
 
   // Handle quick size selection
   const handleQuickSizeSelect = (size: number) => {
     setInputValue(size.toString());
     setInputErrors(prev => ({ ...prev, roofSize: '' }));
-    // Only update form data for quick selections
+    // Update form data immediately for quick selections
     onFormChange({ 
       ...formData, 
       roofSize: size 
@@ -217,7 +217,7 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
     onUnitToggle();
   };
 
-  // Handle input blur - validate and update form data ONLY when user is done
+  // Handle input blur - validate and update form data when user is done
   const handleRoofSizeBlur = () => {
     const validation = validateRoofSize(inputValue, formData.useMetric);
     
@@ -226,7 +226,7 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
       return;
     }
 
-    // Only NOW update the form data when user is completely done typing
+    // Update the form data when user is done typing
     if (validation.sanitizedValue !== undefined) {
       onFormChange({ 
         ...formData, 
@@ -273,7 +273,7 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
           id="roof-size-input"
           name="roofSize"
           value={inputValue}
-          onChange={(e) => handleRoofSizeChange(e.target.value)}
+          onChange={handleRoofSizeChange}
           onBlur={handleRoofSizeBlur}
           onKeyPress={handleKeyPress}
           className={`w-full px-4 py-4 bg-gray-50 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-lg font-medium pr-16 ${
