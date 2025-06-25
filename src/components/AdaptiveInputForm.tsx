@@ -120,45 +120,189 @@ const getRoleDescriptions = (userRole: UserRole) => {
   }
 };
 
+// Input validation utilities
+const validateRoofSize = (value: string, useMetric: boolean): { isValid: boolean; error?: string; sanitizedValue?: number } => {
+  // Remove any non-numeric characters except decimal point
+  const sanitized = value.replace(/[^\d.]/g, '');
+  
+  // Check for empty input
+  if (!sanitized || sanitized.trim() === '') {
+    return { isValid: false, error: 'Roof size is required' };
+  }
+  
+  // Parse the number
+  const numValue = parseFloat(sanitized);
+  
+  // Check if it's a valid number
+  if (isNaN(numValue)) {
+    return { isValid: false, error: 'Please enter a valid number' };
+  }
+  
+  // Check minimum values
+  const minValue = useMetric ? 10 : 108; // 10 m² or ~108 sq ft
+  if (numValue < minValue) {
+    return { 
+      isValid: false, 
+      error: `Minimum roof size is ${minValue} ${useMetric ? 'm²' : 'sq ft'}` 
+    };
+  }
+  
+  // Check maximum values (reasonable limits)
+  const maxValue = useMetric ? 100000 : 1076391; // 100,000 m² or ~1M sq ft
+  if (numValue > maxValue) {
+    return { 
+      isValid: false, 
+      error: `Maximum roof size is ${maxValue.toLocaleString()} ${useMetric ? 'm²' : 'sq ft'}` 
+    };
+  }
+  
+  // Check for reasonable decimal places
+  const decimalPlaces = (sanitized.split('.')[1] || '').length;
+  if (decimalPlaces > 2) {
+    return { 
+      isValid: false, 
+      error: 'Please use maximum 2 decimal places' 
+    };
+  }
+  
+  return { isValid: true, sanitizedValue: numValue };
+};
+
+// Format number for display
+const formatRoofSize = (value: number): string => {
+  if (value === 0) return '';
+  return value.toString();
+};
+
 export default function AdaptiveInputForm({ userRole, formData, onFormChange, onUnitToggle }: AdaptiveInputFormProps) {
+  const [inputErrors, setInputErrors] = React.useState<Record<string, string>>({});
+  const [inputValue, setInputValue] = React.useState<string>(formatRoofSize(formData.roofSize));
+  
   const priority = getInputPriority(userRole);
   const labels = getRoleLabels(userRole);
   const descriptions = getRoleDescriptions(userRole);
 
-  const quickSizes = formData.useMetric 
-    ? [500, 1000, 2000, 5000] 
-    : [5382, 10764, 21528, 53820];
+  // Quick size presets based on unit
+  const quickSizes = React.useMemo(() => {
+    if (formData.useMetric) {
+      return [
+        { value: 100, label: '100 m²', description: 'Small house' },
+        { value: 200, label: '200 m²', description: 'Medium house' },
+        { value: 500, label: '500 m²', description: 'Large house' },
+        { value: 1000, label: '1,000 m²', description: 'Small commercial' },
+        { value: 2000, label: '2,000 m²', description: 'Medium commercial' },
+        { value: 5000, label: '5,000 m²', description: 'Large commercial' }
+      ];
+    } else {
+      return [
+        { value: 1076, label: '1,076 sq ft', description: 'Small house' },
+        { value: 2153, label: '2,153 sq ft', description: 'Medium house' },
+        { value: 5382, label: '5,382 sq ft', description: 'Large house' },
+        { value: 10764, label: '10,764 sq ft', description: 'Small commercial' },
+        { value: 21528, label: '21,528 sq ft', description: 'Medium commercial' },
+        { value: 53820, label: '53,820 sq ft', description: 'Large commercial' }
+      ];
+    }
+  }, [formData.useMetric]);
+
+  // Update input value when formData changes (e.g., unit toggle)
+  React.useEffect(() => {
+    setInputValue(formatRoofSize(formData.roofSize));
+  }, [formData.roofSize]);
+
+  // Handle roof size input change with validation
+  const handleRoofSizeChange = (value: string) => {
+    setInputValue(value);
+    
+    // Clear previous errors
+    setInputErrors(prev => ({ ...prev, roofSize: '' }));
+    
+    // Validate input
+    const validation = validateRoofSize(value, formData.useMetric);
+    
+    if (!validation.isValid) {
+      setInputErrors(prev => ({ ...prev, roofSize: validation.error || '' }));
+      return;
+    }
+    
+    // Update form data with validated value
+    if (validation.sanitizedValue !== undefined) {
+      onFormChange({ 
+        ...formData, 
+        roofSize: validation.sanitizedValue
+      });
+    }
+  };
+
+  // Handle quick size selection
+  const handleQuickSizeSelect = (size: number) => {
+    setInputValue(formatRoofSize(size));
+    setInputErrors(prev => ({ ...prev, roofSize: '' }));
+    onFormChange({ 
+      ...formData, 
+      roofSize: size 
+    });
+  };
+
+  // Handle unit toggle with proper conversion
+  const handleUnitToggle = () => {
+    // Clear any existing errors
+    setInputErrors(prev => ({ ...prev, roofSize: '' }));
+    onUnitToggle();
+  };
+
+  // Handle input blur for final validation
+  const handleRoofSizeBlur = () => {
+    if (inputValue.trim() === '') {
+      setInputErrors(prev => ({ ...prev, roofSize: 'Roof size is required' }));
+      return;
+    }
+    
+    const validation = validateRoofSize(inputValue, formData.useMetric);
+    if (!validation.isValid) {
+      setInputErrors(prev => ({ ...prev, roofSize: validation.error || '' }));
+    }
+  };
 
   const renderRoofSizeInput = () => (
-    <div className="space-y-4" data-tour="roof-size">
+    <div className="space-y-6" data-tour="roof-size">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Ruler className="w-5 h-5 text-blue-600" />
+        <div className="flex items-center space-x-3">
+          <Ruler className="w-6 h-6 text-blue-600" />
           <label className="block text-lg font-semibold text-gray-900">
             {labels.roofSize}
           </label>
           <HelpTooltip content={descriptions.roofSize} />
         </div>
         <button
-          onClick={onUnitToggle}
-          className="flex items-center space-x-2 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm"
+          type="button"
+          onClick={handleUnitToggle}
+          className="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium"
+          aria-label={`Switch to ${formData.useMetric ? 'square feet' : 'square meters'}`}
         >
           <span className={formData.useMetric ? 'font-semibold text-blue-600' : 'text-gray-500'}>m²</span>
+          <span className="text-gray-400">|</span>
           <span className={!formData.useMetric ? 'font-semibold text-blue-600' : 'text-gray-500'}>sq ft</span>
         </button>
       </div>
       
+      {/* Main Input Field */}
       <div className="relative">
         <input
-          type="number"
-          value={formData.roofSize}
-          onChange={(e) => onFormChange({ 
-            ...formData, 
-            roofSize: Math.max(1, parseInt(e.target.value) || 1) 
-          })}
-          className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-lg font-medium"
-          min="1"
-          step={formData.useMetric ? "50" : "500"}
+          type="text"
+          value={inputValue}
+          onChange={(e) => handleRoofSizeChange(e.target.value)}
+          onBlur={handleRoofSizeBlur}
+          className={`w-full px-4 py-4 bg-gray-50 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-lg font-medium pr-16 ${
+            inputErrors.roofSize 
+              ? 'border-red-500 bg-red-50' 
+              : 'border-gray-200 hover:border-gray-300 focus:border-blue-500'
+          }`}
+          placeholder={`Enter roof size in ${formData.useMetric ? 'm²' : 'sq ft'}`}
+          aria-describedby={inputErrors.roofSize ? 'roof-size-error' : 'roof-size-help'}
+          aria-invalid={!!inputErrors.roofSize}
+          autoComplete="off"
+          inputMode="decimal"
         />
         <div className="absolute inset-y-0 right-0 flex items-center pr-4">
           <span className="text-gray-500 text-sm font-medium">
@@ -167,25 +311,57 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
         </div>
       </div>
       
-      <div className="flex flex-wrap gap-2">
-        {quickSizes.map((size) => (
-          <button
-            key={size}
-            onClick={() => onFormChange({ ...formData, roofSize: size })}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              formData.roofSize === size 
-                ? 'bg-blue-100 text-blue-700 border border-blue-300' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
-            }`}
-          >
-            {size.toLocaleString()}
-          </button>
-        ))}
+      {/* Error Message */}
+      {inputErrors.roofSize && (
+        <div id="roof-size-error" className="flex items-center space-x-2 text-red-600 text-sm" role="alert">
+          <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          <span>{inputErrors.roofSize}</span>
+        </div>
+      )}
+      
+      {/* Help Text */}
+      {!inputErrors.roofSize && (
+        <div id="roof-size-help" className="text-sm text-gray-600">
+          Enter the total roof area. Use the quick size buttons below for common sizes.
+        </div>
+      )}
+      
+      {/* Quick Size Buttons */}
+      <div className="space-y-3">
+        <h4 className="text-sm font-medium text-gray-700">Quick Size Selection:</h4>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {quickSizes.map((size) => (
+            <button
+              key={size.value}
+              type="button"
+              onClick={() => handleQuickSizeSelect(size.value)}
+              className={`p-3 rounded-lg text-sm font-medium transition-all duration-200 border-2 ${
+                formData.roofSize === size.value 
+                  ? 'bg-blue-100 text-blue-700 border-blue-300 shadow-sm' 
+                  : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-200 hover:border-gray-300'
+              }`}
+              aria-pressed={formData.roofSize === size.value}
+            >
+              <div className="font-semibold">{size.label}</div>
+              <div className="text-xs opacity-75">{size.description}</div>
+            </button>
+          ))}
+        </div>
       </div>
       
-      {!formData.useMetric && (
-        <div className="text-xs text-gray-500">
-          ≈ {Math.round(formData.roofSize / 10.764).toLocaleString()} m² for calculations
+      {/* Unit Conversion Display */}
+      {!formData.useMetric && formData.roofSize > 0 && (
+        <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
+          <strong>Metric equivalent:</strong> {Math.round(formData.roofSize / 10.764).toLocaleString()} m² 
+          (used for calculations)
+        </div>
+      )}
+      
+      {formData.useMetric && formData.roofSize > 0 && (
+        <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
+          <strong>Imperial equivalent:</strong> {Math.round(formData.roofSize * 10.764).toLocaleString()} sq ft
         </div>
       )}
     </div>
@@ -205,6 +381,7 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
         {Object.entries(ROOF_TYPES).map(([type, typeData]) => (
           <button
             key={type}
+            type="button"
             onClick={() => onFormChange({ 
               ...formData, 
               roofType: type as keyof typeof ROOF_TYPES 
