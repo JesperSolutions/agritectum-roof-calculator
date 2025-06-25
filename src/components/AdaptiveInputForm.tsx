@@ -187,14 +187,17 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
     setInputValue(formData.roofSize.toString());
   }, [formData.roofSize]);
 
-  // Handle roof size input change - completely free typing, NO form updates
+  // Handle roof size input change - completely free typing, NO form updates during typing
   const handleRoofSizeChange = (value: string) => {
-    setInputValue(value);
+    // Allow only numbers and decimal point
+    const sanitizedValue = value.replace(/[^\d.]/g, '');
+    setInputValue(sanitizedValue);
+    
     // Clear any existing errors when user starts typing
     if (inputErrors.roofSize) {
       setInputErrors(prev => ({ ...prev, roofSize: '' }));
     }
-    // DO NOT call onFormChange here - this was causing the focus loss!
+    // CRITICAL: DO NOT call onFormChange here - this was causing the focus loss!
   };
 
   // Handle quick size selection
@@ -234,6 +237,13 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
     }
   };
 
+  // Handle Enter key to trigger blur (finish editing)
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur();
+    }
+  };
+
   const renderRoofSizeInput = () => (
     <div className="space-y-6" data-tour="roof-size">
       <div className="flex items-center justify-between">
@@ -265,6 +275,7 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
           value={inputValue}
           onChange={(e) => handleRoofSizeChange(e.target.value)}
           onBlur={handleRoofSizeBlur}
+          onKeyPress={handleKeyPress}
           className={`w-full px-4 py-4 bg-gray-50 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-lg font-medium pr-16 ${
             inputErrors.roofSize 
               ? 'border-red-500 bg-red-50' 
