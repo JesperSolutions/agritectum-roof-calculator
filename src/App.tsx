@@ -387,8 +387,8 @@ export default function RoofImpactDashboard() {
   const progressPercentage = Math.round((completedSteps / totalSteps) * 100);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
-      {/* Streamlined Header */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Simplified Header */}
       <StreamlinedHeader
         title="Roof Impact Calculator"
         subtitle="Sustainable roofing solutions analysis"
@@ -416,18 +416,12 @@ export default function RoofImpactDashboard() {
               label: 'Start Tour',
               onClick: () => setShowTour(true),
               icon: Play
-            },
-            {
-              label: 'Settings',
-              onClick: () => {},
-              icon: Settings
             }
           ]
         }}
-        compact={false}
       />
 
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 py-4 space-y-4">
         {/* User Role Selection */}
         <UserRoleSelector 
           selectedRole={appState.userRole}
@@ -437,17 +431,17 @@ export default function RoofImpactDashboard() {
         {/* Only show content if user has selected a role */}
         {appState.userRole && (
           <>
-            {/* Compact Progress Indicator */}
+            {/* Simple Progress */}
             <CompactProgressIndicator 
               steps={progressSteps} 
               currentStep={currentStepId}
-              variant="compact"
+              variant="minimal"
             />
 
-            {/* Role-Based Content Template */}
+            {/* Clean Content Layout */}
             <RoleBasedContentTemplate
               userRole={appState.userRole}
-              layout="grid"
+              layout="stack"
               sections={[
                 {
                   id: 'input-form',
@@ -497,30 +491,28 @@ export default function RoofImpactDashboard() {
                   icon: TrendingUp,
                   priority: 4,
                   content: (
-                    <div className="space-y-6">
-                      {/* Mode Selector */}
+                    <div className="space-y-4">
+                      {/* Simple Mode Selector */}
                       <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
                         <button
                           onClick={() => setActiveMainTab('standard')}
-                          className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                             activeMainTab === 'standard'
                               ? 'bg-white text-green-600 shadow-sm'
                               : 'text-gray-600 hover:text-gray-900'
                           }`}
                         >
-                          <Calculator className="w-4 h-4" />
-                          <span>Enhanced Charts</span>
+                          Charts
                         </button>
                         <button
                           onClick={() => setActiveMainTab('custom')}
-                          className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                             activeMainTab === 'custom'
                               ? 'bg-white text-green-600 shadow-sm'
                               : 'text-gray-600 hover:text-gray-900'
                           }`}
                         >
-                          <Settings className="w-4 h-4" />
-                          <span>Custom Designer</span>
+                          Designer
                         </button>
                       </div>
 
@@ -547,117 +539,39 @@ export default function RoofImpactDashboard() {
               ]}
             />
 
-            {/* Simple Comparison Chart - Only for standard mode */}
-            {activeMainTab === 'standard' && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center space-x-3 mb-6">
-                  <Info className="w-6 h-6 text-blue-600" />
-                  <h3 className="text-xl font-semibold text-gray-900">Roof Type Comparison</h3>
-                  <HelpTooltip content="Compare all available roof types side by side. Green bars show annual CO₂ offset (environmental benefit), while blue bars show total installation cost. This helps you choose the best option for your priorities and budget." />
-                </div>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={comparisonData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="name" stroke="#666" angle={-45} textAnchor="end" height={80} />
-                      <YAxis yAxisId="left" stroke="#666" />
-                      <YAxis yAxisId="right" orientation="right" stroke="#666" />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'white', 
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '12px',
-                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                        }}
-                        formatter={(value: any, name: string) => [
-                          name === 'totalCost' ? `€${Number(value).toLocaleString()}` : `${Number(value).toLocaleString()} kg`,
-                          name === 'co2Offset' ? 'Annual CO₂ Offset' : 'Total Installation Cost'
-                        ]}
-                      />
-                      <Legend />
-                      <Bar 
-                        yAxisId="left"
-                        dataKey="co2Offset" 
-                        fill="#10b981"
-                        radius={[4, 4, 0, 0]}
-                        name="Annual CO₂ Offset"
-                      />
-                      <Bar 
-                        yAxisId="right"
-                        dataKey="totalCost" 
-                        fill="#3b82f6"
-                        radius={[4, 4, 0, 0]}
-                        name="Total Installation Cost"
-                        opacity={0.7}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
-
-            {/* CTA Section */}
-            <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-xl shadow-lg p-6 text-white" data-tour="cta-section">
-              <div className="text-center max-w-2xl mx-auto">
-                <FileText className="w-10 h-10 mx-auto mb-3 opacity-90" />
-                <h2 className="text-2xl font-bold mb-3">
-                  Ready to Transform Your Roof?
-                </h2>
-                <p className="text-lg text-green-100 mb-6">
-                  Get a personalized assessment and detailed report based on your specific building and requirements.
-                </p>
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="bg-white text-green-700 px-6 py-3 rounded-lg font-semibold hover:bg-green-50 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-                >
-                  Get Your Personal Roof Assessment
-                </button>
-                <p className="text-sm text-green-200 mt-3">
-                  Free consultation • No commitment • Expert guidance
-                </p>
-              </div>
+            {/* Simple CTA */}
+            <div className="bg-green-600 rounded-lg p-6 text-white text-center">
+              <h2 className="text-xl font-bold mb-2">
+                Ready to Transform Your Roof?
+              </h2>
+              <p className="text-green-100 mb-4">
+                Get a personalized assessment and detailed report.
+              </p>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="bg-white text-green-700 px-6 py-3 rounded-lg font-medium hover:bg-green-50 transition-colors"
+              >
+                Get Your Assessment
+              </button>
             </div>
           </>
         )}
-
-        {/* Footer */}
-        <div className="text-center py-6">
-          <p className="text-gray-600 text-sm">
-            © 2025 Agritectum - Sustainable Building Solutions | 
-            <a href="mailto:jesper.aggerholm@agritectum.com" className="text-green-600 hover:text-green-700 ml-1">
-              info@agritectum.com
-            </a>
-          </p>
-        </div>
       </div>
 
-      {/* Lead Capture Modal */}
+      {/* Modals and overlays */}
       <LeadCaptureModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         calculatorData={calculatorData}
       />
 
-      {/* Guided Tour */}
       <GuidedTour 
         isActive={showTour}
         onComplete={handleTourComplete}
         onSkip={handleTourSkip}
       />
 
-      {/* Keyboard Shortcuts Help */}
       <KeyboardShortcutsHelp shortcuts={shortcuts} />
-
-      {/* Tour Highlight Styles */}
-      <style jsx global>{`
-        .tour-highlight {
-          position: relative;
-          z-index: 45;
-          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 0 8px rgba(59, 130, 246, 0.2);
-          border-radius: 12px;
-          transition: all 0.3s ease;
-        }
-      `}</style>
     </div>
   );
 }
