@@ -120,7 +120,7 @@ const getRoleDescriptions = (userRole: UserRole) => {
   }
 };
 
-// Input validation utilities
+// Input validation utilities - only for final validation
 const validateRoofSize = (value: string, useMetric: boolean): { isValid: boolean; error?: string; sanitizedValue?: number } => {
   // Remove any non-numeric characters except decimal point
   const sanitized = value.replace(/[^\d.]/g, '');
@@ -168,15 +168,9 @@ const validateRoofSize = (value: string, useMetric: boolean): { isValid: boolean
   return { isValid: true, sanitizedValue: numValue };
 };
 
-// Format number for display
-const formatRoofSize = (value: number): string => {
-  if (value === 0) return '';
-  return value.toString();
-};
-
 export default function AdaptiveInputForm({ userRole, formData, onFormChange, onUnitToggle }: AdaptiveInputFormProps) {
   const [inputErrors, setInputErrors] = React.useState<Record<string, string>>({});
-  const [inputValue, setInputValue] = React.useState<string>(formatRoofSize(formData.roofSize));
+  const [inputValue, setInputValue] = React.useState<string>(formData.roofSize.toString());
   
   const priority = getInputPriority(userRole);
   const labels = getRoleLabels(userRole);
@@ -207,36 +201,19 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
 
   // Update input value when formData changes (e.g., unit toggle)
   React.useEffect(() => {
-    setInputValue(formatRoofSize(formData.roofSize));
+    setInputValue(formData.roofSize.toString());
   }, [formData.roofSize]);
 
-  // Handle roof size input change with validation
+  // Handle roof size input change - allow free typing
   const handleRoofSizeChange = (value: string) => {
     setInputValue(value);
-    
-    // Clear previous errors
+    // Clear previous errors when user starts typing
     setInputErrors(prev => ({ ...prev, roofSize: '' }));
-    
-    // Validate input
-    const validation = validateRoofSize(value, formData.useMetric);
-    
-    if (!validation.isValid) {
-      setInputErrors(prev => ({ ...prev, roofSize: validation.error || '' }));
-      return;
-    }
-    
-    // Update form data with validated value
-    if (validation.sanitizedValue !== undefined) {
-      onFormChange({ 
-        ...formData, 
-        roofSize: validation.sanitizedValue
-      });
-    }
   };
 
   // Handle quick size selection
   const handleQuickSizeSelect = (size: number) => {
-    setInputValue(formatRoofSize(size));
+    setInputValue(size.toString());
     setInputErrors(prev => ({ ...prev, roofSize: '' }));
     onFormChange({ 
       ...formData, 
@@ -251,7 +228,7 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
     onUnitToggle();
   };
 
-  // Handle input blur for final validation
+  // Handle input blur for final validation and update
   const handleRoofSizeBlur = () => {
     if (inputValue.trim() === '') {
       setInputErrors(prev => ({ ...prev, roofSize: 'Roof size is required' }));
@@ -261,6 +238,17 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
     const validation = validateRoofSize(inputValue, formData.useMetric);
     if (!validation.isValid) {
       setInputErrors(prev => ({ ...prev, roofSize: validation.error || '' }));
+      return;
+    }
+
+    // Update form data with validated value
+    if (validation.sanitizedValue !== undefined) {
+      onFormChange({ 
+        ...formData, 
+        roofSize: validation.sanitizedValue
+      });
+      // Update input value to show the sanitized version
+      setInputValue(validation.sanitizedValue.toString());
     }
   };
 
