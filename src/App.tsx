@@ -9,13 +9,11 @@ import SmartRecommendations from './components/SmartRecommendations';
 import CustomRoofDesigner from './components/CustomRoofDesigner';
 import HelpTooltip from './components/HelpTooltip';
 import GuidedTour from './components/GuidedTour';
-import CompactProgressIndicator from './components/CompactProgressIndicator';
+import ProgressIndicator from './components/ProgressIndicator';
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
 import UserRoleSelector, { UserRole } from './components/UserRoleSelector';
 import AdaptiveMetricsDisplay from './components/AdaptiveMetricsDisplay';
 import AdaptiveInputForm from './components/AdaptiveInputForm';
-import StreamlinedHeader from './components/StreamlinedHeader';
-import RoleBasedContentTemplate from './components/RoleBasedContentTemplate';
 import { Project, LocationData, ROOF_TYPES } from './types/project';
 import { generateProjectId } from './utils/projectStorage';
 import { useUndoRedo } from './hooks/useUndoRedo';
@@ -381,47 +379,61 @@ export default function RoofImpactDashboard() {
     maintenanceCost
   };
 
-  // Progress calculation for header
-  const completedSteps = progressSteps.filter(step => step.status === 'completed').length;
-  const totalSteps = progressSteps.length;
-  const progressPercentage = Math.round((completedSteps / totalSteps) * 100);
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Simplified Header */}
-      <StreamlinedHeader
-        title="Roof Impact Calculator"
-        subtitle="Sustainable roofing solutions analysis"
-        progress={{
-          current: completedSteps,
-          total: totalSteps,
-          percentage: progressPercentage
-        }}
-        actions={{
-          primary: {
-            label: 'Get Report',
-            onClick: () => setIsModalOpen(true),
-            icon: FileText
-          },
-          secondary: [
-            {
-              label: 'Save Project',
-              onClick: () => {
-                const saveButton = document.querySelector('[data-action="save-project"]') as HTMLButtonElement;
-                saveButton?.click();
-              },
-              icon: Save
-            },
-            {
-              label: 'Start Tour',
-              onClick: () => setShowTour(true),
-              icon: Play
-            }
-          ]
-        }}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b border-green-100" data-tour="header">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-20 h-12">
+                <img
+                  src="/logo.webp"
+                  alt="Agritectum logo"
+                  className="w-full h-full object-contain rounded-xl"
+                />
+              </div>
+            </div>
+            
+            {/* Header Actions */}
+            <div className="flex items-center space-x-4">
+              {/* Undo/Redo Buttons */}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={undoRedoActions.undo}
+                  disabled={!undoRedoActions.canUndo}
+                  className="p-2 text-gray-600 hover:text-gray-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                  title="Undo (Ctrl+Z)"
+                >
+                  <Undo className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={undoRedoActions.redo}
+                  disabled={!undoRedoActions.canRedo}
+                  className="p-2 text-gray-600 hover:text-gray-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                  title="Redo (Ctrl+Y)"
+                >
+                  <Redo className="w-5 h-5" />
+                </button>
+              </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-4 space-y-4">
+              {/* Tour Button */}
+              {hasSeenTour && (
+                <button
+                  onClick={() => setShowTour(true)}
+                  className="flex items-center space-x-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                  title="Start Guided Tour (Ctrl+T)"
+                >
+                  <Play className="w-4 h-4" />
+                  <span className="hidden sm:inline">Tour</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
         {/* User Role Selection */}
         <UserRoleSelector 
           selectedRole={appState.userRole}
@@ -431,147 +443,207 @@ export default function RoofImpactDashboard() {
         {/* Only show content if user has selected a role */}
         {appState.userRole && (
           <>
-            {/* Simple Progress */}
-            <CompactProgressIndicator 
-              steps={progressSteps} 
-              currentStep={currentStepId}
-              variant="minimal"
-            />
+            {/* Progress Indicator */}
+            <ProgressIndicator steps={progressSteps} currentStep={currentStepId} />
 
-            {/* Clean Content Layout */}
-            <RoleBasedContentTemplate
+            {/* Adaptive Input Form */}
+            <AdaptiveInputForm
               userRole={appState.userRole}
-              layout="stack"
-              sections={[
-                {
-                  id: 'input-form',
-                  title: 'Configuration',
-                  icon: Calculator,
-                  priority: 1,
-                  content: (
-                    <AdaptiveInputForm
-                      userRole={appState.userRole}
-                      formData={appState}
-                      onFormChange={handleFormChange}
-                      onUnitToggle={handleUnitToggle}
-                    />
-                  )
-                },
-                {
-                  id: 'metrics',
-                  title: 'Key Metrics',
-                  icon: TrendingUp,
-                  priority: 2,
-                  content: (
-                    <AdaptiveMetricsDisplay
-                      userRole={appState.userRole}
-                      metrics={adaptiveMetrics}
-                      roofType={appState.roofType}
-                      includeSolar={appState.includeSolar}
-                    />
-                  )
-                },
-                {
-                  id: 'project-management',
-                  title: 'Project Management',
-                  icon: FolderOpen,
-                  priority: 3,
-                  compact: true,
-                  content: (
-                    <ProjectManager 
-                      currentProject={currentProject}
-                      onProjectLoad={handleProjectLoad}
-                      onNewProject={handleNewProject}
-                    />
-                  )
-                },
-                {
-                  id: 'charts',
-                  title: 'Analysis Tools',
-                  icon: TrendingUp,
-                  priority: 4,
-                  content: (
-                    <div className="space-y-4">
-                      {/* Simple Mode Selector */}
-                      <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
-                        <button
-                          onClick={() => setActiveMainTab('standard')}
-                          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                            activeMainTab === 'standard'
-                              ? 'bg-white text-green-600 shadow-sm'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          Charts
-                        </button>
-                        <button
-                          onClick={() => setActiveMainTab('custom')}
-                          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                            activeMainTab === 'custom'
-                              ? 'bg-white text-green-600 shadow-sm'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          Designer
-                        </button>
-                      </div>
-
-                      {/* Content */}
-                      {activeMainTab === 'standard' ? (
-                        <EnhancedCharts 
-                          chartData={chartData}
-                          roofType={appState.roofType}
-                          includeSolar={appState.includeSolar}
-                          totalCo2PerYear={totalCo2PerYear}
-                          totalEnergyPerYear={totalEnergyPerYear}
-                          noxPerYear={noxPerYear}
-                          location={appState.location}
-                        />
-                      ) : (
-                        <CustomRoofDesigner 
-                          roofSize={roofSizeM2} 
-                          location={appState.location || undefined}
-                        />
-                      )}
-                    </div>
-                  )
-                }
-              ]}
+              formData={appState}
+              onFormChange={handleFormChange}
+              onUnitToggle={handleUnitToggle}
             />
 
-            {/* Simple CTA */}
-            <div className="bg-green-600 rounded-lg p-6 text-white text-center">
-              <h2 className="text-xl font-bold mb-2">
-                Ready to Transform Your Roof?
-              </h2>
-              <p className="text-green-100 mb-4">
-                Get a personalized assessment and detailed report.
-              </p>
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="bg-white text-green-700 px-6 py-3 rounded-lg font-medium hover:bg-green-50 transition-colors"
-              >
-                Get Your Assessment
-              </button>
+            {/* Project Management */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8" data-tour="project-management">
+              <div className="flex items-center space-x-3 mb-6">
+                <FolderOpen className="w-6 h-6 text-purple-600" />
+                <h2 className="text-xl font-semibold text-gray-900">Project Management</h2>
+                <HelpTooltip content="Save your current roof configuration as a project to compare different scenarios or return to later. You can manage multiple projects and track your progress through the decision-making process." />
+              </div>
+              <ProjectManager 
+                currentProject={currentProject}
+                onProjectLoad={handleProjectLoad}
+                onNewProject={handleNewProject}
+              />
+            </div>
+
+            {/* Adaptive Metrics Display */}
+            <AdaptiveMetricsDisplay
+              userRole={appState.userRole}
+              metrics={adaptiveMetrics}
+              roofType={appState.roofType}
+              includeSolar={appState.includeSolar}
+            />
+
+            {/* Main Calculator Mode Selector */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+              <div className="flex items-center space-x-3 mb-6">
+                <Calculator className="w-6 h-6 text-green-600" />
+                <h2 className="text-xl font-semibold text-gray-900">Advanced Analysis Tools</h2>
+                <HelpTooltip content="Choose between standard roof configurations or design a custom mixed-use roof with multiple elements. The custom designer allows percentage-based allocation of different roof technologies." />
+              </div>
+
+              {/* Mode Selector */}
+              <div className="flex space-x-1 bg-gray-100 rounded-lg p-1 mb-8">
+                <button
+                  onClick={() => setActiveMainTab('standard')}
+                  className={`flex-1 flex items-center justify-center space-x-2 px-6 py-3 rounded-md text-sm font-medium transition-colors ${
+                    activeMainTab === 'standard'
+                      ? 'bg-white text-green-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Calculator className="w-4 h-4" />
+                  <span>Enhanced Charts</span>
+                </button>
+                <button
+                  onClick={() => setActiveMainTab('custom')}
+                  className={`flex-1 flex items-center justify-center space-x-2 px-6 py-3 rounded-md text-sm font-medium transition-colors ${
+                    activeMainTab === 'custom'
+                      ? 'bg-white text-green-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Custom Roof Designer</span>
+                </button>
+              </div>
+
+              {/* Enhanced Charts */}
+              {activeMainTab === 'standard' && (
+                <div data-tour="enhanced-charts">
+                  <EnhancedCharts 
+                    chartData={chartData}
+                    roofType={appState.roofType}
+                    includeSolar={appState.includeSolar}
+                    totalCo2PerYear={totalCo2PerYear}
+                    totalEnergyPerYear={totalEnergyPerYear}
+                    noxPerYear={noxPerYear}
+                    location={appState.location}
+                  />
+                </div>
+              )}
+
+              {/* Custom Roof Designer */}
+              {activeMainTab === 'custom' && (
+                <CustomRoofDesigner 
+                  roofSize={roofSizeM2} 
+                  location={appState.location || undefined}
+                />
+              )}
+            </div>
+
+            {/* Simple Comparison Chart - Only for standard mode */}
+            {activeMainTab === 'standard' && (
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                <div className="flex items-center space-x-3 mb-6">
+                  <Info className="w-6 h-6 text-blue-600" />
+                  <h3 className="text-xl font-semibold text-gray-900">Roof Type Comparison</h3>
+                  <HelpTooltip content="Compare all available roof types side by side. Green bars show annual CO₂ offset (environmental benefit), while blue bars show total installation cost. This helps you choose the best option for your priorities and budget." />
+                </div>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={comparisonData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="name" stroke="#666" angle={-45} textAnchor="end" height={80} />
+                      <YAxis yAxisId="left" stroke="#666" />
+                      <YAxis yAxisId="right" orientation="right" stroke="#666" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '12px',
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                        }}
+                        formatter={(value: any, name: string) => [
+                          name === 'totalCost' ? `€${Number(value).toLocaleString()}` : `${Number(value).toLocaleString()} kg`,
+                          name === 'co2Offset' ? 'Annual CO₂ Offset' : 'Total Installation Cost'
+                        ]}
+                      />
+                      <Bar 
+                        yAxisId="left"
+                        dataKey="co2Offset" 
+                        fill="#10b981"
+                        radius={[4, 4, 0, 0]}
+                        name="Annual CO₂ Offset"
+                      />
+                      <Bar 
+                        yAxisId="right"
+                        dataKey="totalCost" 
+                        fill="#3b82f6"
+                        radius={[4, 4, 0, 0]}
+                        name="Total Installation Cost"
+                        opacity={0.7}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* CTA Section */}
+            <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl shadow-xl p-8 text-white" data-tour="cta-section">
+              <div className="text-center max-w-3xl mx-auto">
+                <FileText className="w-12 h-12 mx-auto mb-4 opacity-90" />
+                <h2 className="text-3xl font-bold mb-4">
+                  Ready to Transform Your Roof?
+                </h2>
+                <p className="text-xl text-green-100 mb-8">
+                  Get a personalized assessment and detailed report based on your specific building and requirements.
+                </p>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="bg-white text-green-700 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-green-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                >
+                  Get Your Personal Roof Assessment
+                </button>
+                <p className="text-sm text-green-200 mt-4">
+                  Free consultation • No commitment • Expert guidance
+                </p>
+              </div>
             </div>
           </>
         )}
+
+        {/* Footer */}
+        <div className="text-center py-8">
+          <p className="text-gray-600 text-sm">
+            © 2025 Agritectum - Sustainable Building Solutions | 
+            <a href="mailto:jesper.aggerholm@agritectum.com" className="text-green-600 hover:text-green-700 ml-1">
+              info@agritectum.com
+            </a>
+          </p>
+        </div>
       </div>
 
-      {/* Modals and overlays */}
+      {/* Lead Capture Modal */}
       <LeadCaptureModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         calculatorData={calculatorData}
       />
 
+      {/* Guided Tour */}
       <GuidedTour 
         isActive={showTour}
         onComplete={handleTourComplete}
         onSkip={handleTourSkip}
       />
 
+      {/* Keyboard Shortcuts Help */}
       <KeyboardShortcutsHelp shortcuts={shortcuts} />
+
+      {/* Tour Highlight Styles */}
+      <style jsx global>{`
+        .tour-highlight {
+          position: relative;
+          z-index: 45;
+          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 0 8px rgba(59, 130, 246, 0.2);
+          border-radius: 12px;
+          transition: all 0.3s ease;
+        }
+      `}</style>
     </div>
   );
 }
