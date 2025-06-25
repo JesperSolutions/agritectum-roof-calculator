@@ -239,7 +239,7 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <Ruler className="w-6 h-6 text-blue-600" />
-          <label className="block text-lg font-semibold text-gray-900">
+          <label htmlFor="roof-size-input" className="block text-lg font-semibold text-gray-900">
             {labels.roofSize}
           </label>
           <HelpTooltip content={descriptions.roofSize} />
@@ -260,6 +260,8 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
       <div className="relative">
         <input
           type="text"
+          id="roof-size-input"
+          name="roofSize"
           value={inputValue}
           onChange={(e) => handleRoofSizeChange(e.target.value)}
           onBlur={handleRoofSizeBlur}
@@ -341,7 +343,7 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
     <div className="space-y-4" data-tour="roof-type">
       <div className="flex items-center space-x-2">
         <Palette className="w-5 h-5 text-green-600" />
-        <label className="block text-lg font-semibold text-gray-900">
+        <label htmlFor="roof-type-select" className="block text-lg font-semibold text-gray-900">
           {labels.roofType}
         </label>
         <HelpTooltip content={descriptions.roofType} />
@@ -361,6 +363,9 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
                 ? 'border-green-500 bg-green-50 shadow-md'
                 : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
             }`}
+            aria-pressed={formData.roofType === type}
+            role="radio"
+            aria-describedby={`roof-type-${type.replace(/\s+/g, '-').toLowerCase()}-description`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -372,7 +377,7 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
                   <div className="font-medium text-gray-900">{type}</div>
                   <div className="text-xs text-gray-500">{typeData.lifespan} year lifespan</div>
                   {userRole === 'private-individual' && (
-                    <div className="text-xs text-gray-600 mt-1">{typeData.description}</div>
+                    <div id={`roof-type-${type.replace(/\s+/g, '-').toLowerCase()}-description`} className="text-xs text-gray-600 mt-1">{typeData.description}</div>
                   )}
                 </div>
               </div>
@@ -415,6 +420,8 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
         <label className="relative inline-flex items-center cursor-pointer">
           <input
             type="checkbox"
+            id="solar-panels-toggle"
+            name="includeSolar"
             checked={formData.includeSolar}
             onChange={(e) => onFormChange({ 
               ...formData, 
@@ -423,6 +430,7 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
             className="sr-only peer"
           />
           <div className="w-14 h-8 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-yellow-500"></div>
+          <span className="sr-only">Toggle solar panels</span>
         </label>
       </div>
     </div>
