@@ -120,26 +120,19 @@ const getRoleDescriptions = (userRole: UserRole) => {
   }
 };
 
-// Input validation utilities - only for final validation
+// Simple validation for final submission only
 const validateRoofSize = (value: string, useMetric: boolean): { isValid: boolean; error?: string; sanitizedValue?: number } => {
-  // Remove any non-numeric characters except decimal point
-  const sanitized = value.replace(/[^\d.]/g, '');
-  
-  // Check for empty input
-  if (!sanitized || sanitized.trim() === '') {
+  if (!value || value.trim() === '') {
     return { isValid: false, error: 'Roof size is required' };
   }
   
-  // Parse the number
-  const numValue = parseFloat(sanitized);
+  const numValue = parseFloat(value);
   
-  // Check if it's a valid number
   if (isNaN(numValue)) {
     return { isValid: false, error: 'Please enter a valid number' };
   }
   
-  // Check minimum values
-  const minValue = useMetric ? 10 : 108; // 10 m² or ~108 sq ft
+  const minValue = useMetric ? 10 : 108;
   if (numValue < minValue) {
     return { 
       isValid: false, 
@@ -147,21 +140,11 @@ const validateRoofSize = (value: string, useMetric: boolean): { isValid: boolean
     };
   }
   
-  // Check maximum values (reasonable limits)
-  const maxValue = useMetric ? 100000 : 1076391; // 100,000 m² or ~1M sq ft
+  const maxValue = useMetric ? 100000 : 1076391;
   if (numValue > maxValue) {
     return { 
       isValid: false, 
       error: `Maximum roof size is ${maxValue.toLocaleString()} ${useMetric ? 'm²' : 'sq ft'}` 
-    };
-  }
-  
-  // Check for reasonable decimal places
-  const decimalPlaces = (sanitized.split('.')[1] || '').length;
-  if (decimalPlaces > 2) {
-    return { 
-      isValid: false, 
-      error: 'Please use maximum 2 decimal places' 
     };
   }
   
@@ -204,11 +187,13 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
     setInputValue(formData.roofSize.toString());
   }, [formData.roofSize]);
 
-  // Handle roof size input change - allow free typing
+  // Handle roof size input change - completely free typing
   const handleRoofSizeChange = (value: string) => {
     setInputValue(value);
-    // Clear previous errors when user starts typing
-    setInputErrors(prev => ({ ...prev, roofSize: '' }));
+    // Clear any existing errors when user starts typing
+    if (inputErrors.roofSize) {
+      setInputErrors(prev => ({ ...prev, roofSize: '' }));
+    }
   };
 
   // Handle quick size selection
@@ -221,21 +206,16 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
     });
   };
 
-  // Handle unit toggle with proper conversion
+  // Handle unit toggle
   const handleUnitToggle = () => {
-    // Clear any existing errors
     setInputErrors(prev => ({ ...prev, roofSize: '' }));
     onUnitToggle();
   };
 
-  // Handle input blur for final validation and update
+  // Handle input blur - validate and update form data
   const handleRoofSizeBlur = () => {
-    if (inputValue.trim() === '') {
-      setInputErrors(prev => ({ ...prev, roofSize: 'Roof size is required' }));
-      return;
-    }
-    
     const validation = validateRoofSize(inputValue, formData.useMetric);
+    
     if (!validation.isValid) {
       setInputErrors(prev => ({ ...prev, roofSize: validation.error || '' }));
       return;
@@ -247,7 +227,7 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
         ...formData, 
         roofSize: validation.sanitizedValue
       });
-      // Update input value to show the sanitized version
+      // Clean up the input display
       setInputValue(validation.sanitizedValue.toString());
     }
   };
