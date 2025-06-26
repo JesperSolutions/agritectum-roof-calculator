@@ -17,6 +17,9 @@ export default function BuildingFootprintInput({
   onUnitToggle,
   userRole 
 }: BuildingFootprintInputProps) {
+  // Generate unique ID for accessibility
+  const uniqueId = React.useId();
+  
   // Keep user input as string locally to prevent cursor jumping
   const [inputValue, setInputValue] = useState(value.toString());
 
@@ -76,7 +79,7 @@ export default function BuildingFootprintInput({
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Ruler className="w-5 h-5 text-blue-600" />
-          <label className="block text-lg font-semibold text-gray-900">
+          <label htmlFor={uniqueId} className="block text-lg font-semibold text-gray-900">
             {getLabel()}
           </label>
           <HelpTooltip content={getDescription()} />
@@ -94,17 +97,25 @@ export default function BuildingFootprintInput({
       
       <div className="relative">
         <input
+          id={uniqueId}
+          name={`roof-size-${uniqueId}`}
           type="text"
           value={inputValue}
           onChange={handleInputChange}
           className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-lg font-medium pr-16"
           placeholder={`Enter area in ${useMetric ? 'm²' : 'sq ft'}`}
+          aria-describedby={`${uniqueId}-help`}
         />
         <div className="absolute inset-y-0 right-0 flex items-center pr-4">
           <span className="text-gray-500 text-sm font-medium">
             {useMetric ? 'm²' : 'sq ft'}
           </span>
         </div>
+      </div>
+      
+      {/* Hidden description for screen readers */}
+      <div id={`${uniqueId}-help`} className="sr-only">
+        {getDescription()}
       </div>
       
       <div className="flex flex-wrap gap-2">
@@ -117,6 +128,7 @@ export default function BuildingFootprintInput({
                 ? 'bg-blue-100 text-blue-700 border border-blue-300' 
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
             }`}
+            aria-label={`Set roof size to ${size.toLocaleString()} ${useMetric ? 'square meters' : 'square feet'}`}
           >
             {size.toLocaleString()}
           </button>
