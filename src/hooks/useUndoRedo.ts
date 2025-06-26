@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 interface UndoRedoState<T> {
   past: T[];
@@ -8,6 +8,7 @@ interface UndoRedoState<T> {
 
 interface UndoRedoActions<T> {
   set: (newState: T) => void;
+  setImmediate: (newState: T) => void;
   undo: () => void;
   redo: () => void;
   canUndo: boolean;
@@ -15,25 +16,61 @@ interface UndoRedoActions<T> {
   clear: () => void;
 }
 
-export function useUndoRedo<T>(initialState: T): [T, UndoRedoActions<T>] {
+export function useUndoRedo<T>(initialState: T, debounceMs: number = 1000): [T, UndoRedoActions<T>] {
   const [state, setState] = useState<UndoRedoState<T>>({
     past: [],
     present: initialState,
     future: []
   });
 
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingStateRef = useRef<T | null>(null);
+
   const canUndo = state.past.length > 0;
   const canRedo = state.future.length > 0;
 
-  const set = useCallback((newState: T) => {
+  // Immediate state update without saving to history (for smooth typing)
+  const setImmediate = useCallback((newState: T) => {
     setState(currentState => ({
-      past: [...currentState.past, currentState.present],
-      present: newState,
-      future: []
+      ...currentState,
+      present: newState
     }));
   }, []);
 
+  // Debounced state update that saves to history (for undo/redo)
+  const set = useCallback((newState: T) => {
+    // Update state immediately for smooth UX
+    setImmediate(newState);
+    
+    // Store the pending state
+    pendingStateRef.current = newState;
+    
+    // Clear existing timeout
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    
+    // Set new timeout to save to history
+    debounceTimeoutRef.current = setTimeout(() => {
+      if (pendingStateRef.current) {
+        setState(currentState => ({
+          past: [...currentState.past, currentState.present],
+          present: pendingStateRef.current!,
+          future: []
+        }));
+        pendingStateRef.current = null;
+      }
+    }, debounceMs);
+  }, [debounceMs, setImmediate]);
+
   const undo = useCallback(() => {
+    // Clear any pending debounced save
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+      debounceTimeoutRef.current = null;
+      pendingStateRef.current = null;
+    }
+
     setState(currentState => {
       if (currentState.past.length === 0) return currentState;
 
@@ -49,6 +86,13 @@ export function useUndoRedo<T>(initialState: T): [T, UndoRedoActions<T>] {
   }, []);
 
   const redo = useCallback(() => {
+    // Clear any pending debounced save
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+      debounceTimeoutRef.current = null;
+      pendingStateRef.current = null;
+    }
+
     setState(currentState => {
       if (currentState.future.length === 0) return currentState;
 
@@ -64,6 +108,13 @@ export function useUndoRedo<T>(initialState: T): [T, UndoRedoActions<T>] {
   }, []);
 
   const clear = useCallback(() => {
+    // Clear any pending debounced save
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+      debounceTimeoutRef.current = null;
+      pendingStateRef.current = null;
+    }
+
     setState(currentState => ({
       past: [],
       present: currentState.present,
@@ -75,6 +126,7 @@ export function useUndoRedo<T>(initialState: T): [T, UndoRedoActions<T>] {
     state.present,
     {
       set,
+      setImmediate,
       undo,
       redo,
       canUndo,

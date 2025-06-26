@@ -45,7 +45,7 @@ interface AppState {
 }
 
 export default function RoofImpactDashboard() {
-  // Undo/Redo state management
+  // Undo/Redo state management with 1.5 second debounce for smooth typing
   const [appState, undoRedoActions] = useUndoRedo<AppState>({
     roofSize: 1000,
     roofType: "Photocatalytic Coating",
@@ -53,7 +53,7 @@ export default function RoofImpactDashboard() {
     useMetric: true,
     location: null,
     userRole: null
-  });
+  }, 1500); // 1.5 second debounce
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentProject, setCurrentProject] = useState<Partial<Project>>({
@@ -286,7 +286,8 @@ export default function RoofImpactDashboard() {
       ? Math.round(appState.roofSize / M2_TO_SQFT)
       : Math.round(appState.roofSize * M2_TO_SQFT);
     
-    undoRedoActions.set({
+    // Use setImmediate for instant UI update without undo history
+    undoRedoActions.setImmediate({
       ...appState,
       roofSize: newRoofSize,
       useMetric: newUseMetric
@@ -350,6 +351,7 @@ export default function RoofImpactDashboard() {
   };
 
   const handleFormChange = (newFormData: any) => {
+    // Use regular set for form changes (with debouncing)
     undoRedoActions.set({
       ...appState,
       ...newFormData
@@ -357,7 +359,8 @@ export default function RoofImpactDashboard() {
   };
 
   const handleRoleSelect = (role: UserRole) => {
-    undoRedoActions.set({
+    // Use setImmediate for role selection (instant, no undo needed)
+    undoRedoActions.setImmediate({
       ...appState,
       userRole: role
     });
