@@ -1,5 +1,5 @@
-import React from 'react';
-import { Ruler, HelpCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Ruler } from 'lucide-react';
 import HelpTooltip from './HelpTooltip';
 
 interface BuildingFootprintInputProps {
@@ -17,6 +17,14 @@ export default function BuildingFootprintInput({
   onUnitToggle,
   userRole 
 }: BuildingFootprintInputProps) {
+  // Keep user input as string locally to prevent cursor jumping
+  const [inputValue, setInputValue] = useState(value.toString());
+
+  // Update local input when parent value changes (e.g., from quick size buttons)
+  useEffect(() => {
+    setInputValue(value.toString());
+  }, [value]);
+
   const quickSizes = useMetric 
     ? [500, 1000, 2000, 5000] 
     : [5382, 10764, 21528, 53820];
@@ -47,6 +55,22 @@ export default function BuildingFootprintInput({
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setInputValue(raw);
+    
+    // Only update parent when we have a valid number >= 1
+    const numeric = parseInt(raw);
+    if (!isNaN(numeric) && numeric >= 1) {
+      onChange(numeric);
+    }
+  };
+
+  const handleQuickSizeClick = (size: number) => {
+    onChange(size);
+    // Input value will be updated via useEffect
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -70,12 +94,10 @@ export default function BuildingFootprintInput({
       
       <div className="relative">
         <input
-          type="number"
-          value={value}
-          onChange={(e) => onChange(Math.max(1, parseInt(e.target.value) || 1))}
+          type="text"
+          value={inputValue}
+          onChange={handleInputChange}
           className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-lg font-medium pr-16"
-          min="1"
-          step={useMetric ? "50" : "500"}
           placeholder={`Enter area in ${useMetric ? 'm²' : 'sq ft'}`}
         />
         <div className="absolute inset-y-0 right-0 flex items-center pr-4">
@@ -89,7 +111,7 @@ export default function BuildingFootprintInput({
         {quickSizes.map((size) => (
           <button
             key={size}
-            onClick={() => onChange(size)}
+            onClick={() => handleQuickSizeClick(size)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               value === size 
                 ? 'bg-blue-100 text-blue-700 border border-blue-300' 

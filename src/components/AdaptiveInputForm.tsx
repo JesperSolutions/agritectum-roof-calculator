@@ -3,6 +3,7 @@ import { Calculator, MapPin, Sun, Settings, Home, Ruler, Palette, Zap } from 'lu
 import { UserRole } from './UserRoleSelector';
 import HelpTooltip from './HelpTooltip';
 import LocationSelector from './LocationSelector';
+import BuildingFootprintInput from './BuildingFootprintInput';
 import { ROOF_TYPES } from '../types/project';
 
 interface AdaptiveInputFormProps {
@@ -125,69 +126,15 @@ export default function AdaptiveInputForm({ userRole, formData, onFormChange, on
   const labels = getRoleLabels(userRole);
   const descriptions = getRoleDescriptions(userRole);
 
-  const quickSizes = formData.useMetric 
-    ? [500, 1000, 2000, 5000] 
-    : [5382, 10764, 21528, 53820];
-
   const renderRoofSizeInput = () => (
     <div className="space-y-4" data-tour="roof-size">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Ruler className="w-5 h-5 text-blue-600" />
-          <label className="block text-lg font-semibold text-gray-900">
-            {labels.roofSize}
-          </label>
-          <HelpTooltip content={descriptions.roofSize} />
-        </div>
-        <button
-          onClick={onUnitToggle}
-          className="flex items-center space-x-2 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm"
-        >
-          <span className={formData.useMetric ? 'font-semibold text-blue-600' : 'text-gray-500'}>m²</span>
-          <span className={!formData.useMetric ? 'font-semibold text-blue-600' : 'text-gray-500'}>sq ft</span>
-        </button>
-      </div>
-      
-      <div className="relative">
-        <input
-          type="number"
-          value={formData.roofSize}
-          onChange={(e) => onFormChange({ 
-            ...formData, 
-            roofSize: Math.max(1, parseInt(e.target.value) || 1) 
-          })}
-          className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-lg font-medium"
-          min="1"
-          step={formData.useMetric ? "50" : "500"}
-        />
-        <div className="absolute inset-y-0 right-0 flex items-center pr-4">
-          <span className="text-gray-500 text-sm font-medium">
-            {formData.useMetric ? 'm²' : 'sq ft'}
-          </span>
-        </div>
-      </div>
-      
-      <div className="flex flex-wrap gap-2">
-        {quickSizes.map((size) => (
-          <button
-            key={size}
-            onClick={() => onFormChange({ ...formData, roofSize: size })}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              formData.roofSize === size 
-                ? 'bg-blue-100 text-blue-700 border border-blue-300' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
-            }`}
-          >
-            {size.toLocaleString()}
-          </button>
-        ))}
-      </div>
-      
-      {!formData.useMetric && (
-        <div className="text-xs text-gray-500">
-          ≈ {Math.round(formData.roofSize / 10.764).toLocaleString()} m² for calculations
-        </div>
-      )}
+      <BuildingFootprintInput
+        value={formData.roofSize}
+        onChange={(newSize) => onFormChange({ ...formData, roofSize: newSize })}
+        useMetric={formData.useMetric}
+        onUnitToggle={onUnitToggle}
+        userRole={userRole}
+      />
     </div>
   );
 
