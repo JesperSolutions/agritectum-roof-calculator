@@ -7,7 +7,6 @@
 
 > **Production-ready sustainable roofing calculator with advanced environmental impact analysis, AI-powered recommendations, and comprehensive project management.**
 
-![Roof Impact Calculator Screenshot](https://via.placeholder.com/800x400/10b981/ffffff?text=Roof+Impact+Calculator+Dashboard)
 
 ## 🌟 Features
 
