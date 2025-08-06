@@ -254,8 +254,10 @@ export default function SmartRecommendations({
   const [sortBy, setSortBy] = useState<'confidence' | 'priority' | 'impact' | 'roi'>('confidence');
 
   useEffect(() => {
-    generateAdvancedRecommendations();
-    findSimilarProjectsWithScoring();
+    if (roofSize && totalCo2PerYear !== undefined && totalEnergyPerYear !== undefined) {
+      generateAdvancedRecommendations();
+      findSimilarProjectsWithScoring();
+    }
   }, [roofSize, roofType, includeSolar, location, totalCo2PerYear, totalEnergyPerYear, totalInstallationCost]);
 
   useEffect(() => {

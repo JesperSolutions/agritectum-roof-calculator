@@ -181,6 +181,13 @@ export default function CustomRoofDesigner({ roofSize, location, onConfiguration
     }
   };
 
+  const handlePercentageInputChange = (id: string, value: string) => {
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+      updateElement(id, { percentage: numValue });
+    }
+  };
+
   const startEditingPercentage = (id: string, currentPercentage: number) => {
     setEditingPercentage(id);
     setTempPercentage(currentPercentage.toString());
@@ -597,11 +604,20 @@ export default function CustomRoofDesigner({ roofSize, location, onConfiguration
                 {/* Enhanced Legend */}
                 <div className="mt-6 space-y-3">
                   {elements.map((element) => (
-                    <div key={element.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          onChange={(e) => handlePercentageInputChange(element.id, e.target.value)}
                       <div className="flex items-center space-x-3">
                         <div 
                           className="w-5 h-5 rounded shadow-sm"
                           style={{ backgroundColor: element.color }}
+                          onBlur={(e) => {
+                            // Ensure valid range on blur
+                            const value = parseFloat(e.target.value);
+                            if (isNaN(value) || value < 0) {
+                              updateElement(element.id, { percentage: 0 });
+                            } else if (value > 100) {
+                              updateElement(element.id, { percentage: 100 });
+                            }
+                          }}
                         />
                         <span className="font-medium text-gray-900">{element.name}</span>
                       </div>

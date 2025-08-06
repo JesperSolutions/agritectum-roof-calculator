@@ -249,11 +249,6 @@ export default function EnhancedLeadCaptureModal({
       // Move to email step
       setCurrentStep('email');
       
-      // Call the callback if provided
-      if (onLeadCaptured) {
-        onLeadCaptured();
-      }
-      
     } catch (error) {
       console.error('EmailJS Error Details:', error);
       console.error('Error submitting form:', error);
@@ -266,13 +261,13 @@ export default function EnhancedLeadCaptureModal({
   const handleEmailSent = () => {
     setCurrentStep('success');
     
-    // Call the callback if provided
-    if (onLeadCaptured) {
-      onLeadCaptured();
-    }
-    
     // Auto-close after 3 seconds
     setTimeout(() => {
+      // Call the callback when actually closing
+      if (onLeadCaptured) {
+        onLeadCaptured();
+      }
+      
       onClose();
       setCurrentStep('form');
       // Reset form data

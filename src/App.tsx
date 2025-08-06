@@ -4,6 +4,8 @@ import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun, Fil
 import EnhancedLeadCaptureModal from './components/EnhancedLeadCaptureModal';
 import LocationSelector from './components/LocationSelector';
 import CustomRoofDesigner from './components/CustomRoofDesigner';
+import EnhancedCharts from './components/EnhancedCharts';
+import SmartRecommendations from './components/SmartRecommendations';
 import HelpTooltip from './components/HelpTooltip';
 import { UserRole } from './components/UserRoleSelector';
 import { Project, LocationData, ROOF_TYPES } from './types/project';
@@ -252,6 +254,8 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
   const handleLeadCaptured = () => {
     onUpdate({ hasProvidedContact: true });
     setShowLeadModal(false);
+    // Switch to charts tab after unlocking
+    setActiveTab('charts');
   };
 
   // Tab configuration with lock status
@@ -529,7 +533,7 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
           )}
 
           {/* Locked Content Preview */}
-          {(activeTab === 'charts' || activeTab === 'recommendations' || activeTab === 'reports') && (
+          {(activeTab === 'charts' || activeTab === 'recommendations' || activeTab === 'reports') && !data.hasProvidedContact && (
             <div className="text-center py-16">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl opacity-50 blur-sm"></div>
@@ -604,6 +608,84 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
                   >
                     Unlock Full Analysis - Get Free Consultation
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Unlocked Content */}
+          {data.hasProvidedContact && activeTab === 'charts' && (
+            <div className="space-y-6">
+              <EnhancedCharts 
+                chartData={generateChartData()}
+                roofType={data.roofType || 'Custom Design'}
+                includeSolar={data.includeSolar || false}
+                totalCo2PerYear={calculatedMetrics.totalCo2PerYear}
+                totalEnergyPerYear={calculatedMetrics.totalEnergyPerYear}
+                noxPerYear={calculatedMetrics.noxPerYear}
+                location={data.location}
+              />
+            </div>
+          )}
+
+          {data.hasProvidedContact && activeTab === 'recommendations' && (
+            <div className="space-y-6">
+              <SmartRecommendations
+                roofSize={data.roofSize || 1000}
+                roofType={data.roofType || 'Photocatalytic Coating'}
+                includeSolar={data.includeSolar || false}
+                location={data.location}
+                totalCo2PerYear={calculatedMetrics.totalCo2PerYear}
+                totalEnergyPerYear={calculatedMetrics.totalEnergyPerYear}
+                totalInstallationCost={calculatedMetrics.totalInstallationCost}
+                onRecommendationApply={(recommendation) => {
+                  console.log('Applying recommendation:', recommendation);
+                  // Handle recommendation application
+                }}
+              />
+            </div>
+          )}
+
+          {data.hasProvidedContact && activeTab === 'reports' && (
+            <div className="space-y-6">
+              <div className="text-center py-12">
+                <FileText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Professional Reports</h3>
+                <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
+                  Generate comprehensive PDF reports with all your calculations, recommendations, and analysis.
+                  Perfect for sharing with stakeholders, contractors, and decision makers.
+                </p>
+                <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                  <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
+                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <FileText className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Executive Summary</h4>
+                    <p className="text-sm text-gray-600 mb-4">High-level overview perfect for decision makers and stakeholders</p>
+                    <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                      Generate PDF
+                    </button>
+                  </div>
+                  <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
+                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <Settings className="w-6 h-6 text-green-600" />
+                    </div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Technical Report</h4>
+                    <p className="text-sm text-gray-600 mb-4">Detailed specifications and technical analysis for contractors</p>
+                    <button className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                      Generate PDF
+                    </button>
+                  </div>
+                  <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
+                    <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <TrendingUp className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Financial Analysis</h4>
+                    <p className="text-sm text-gray-600 mb-4">ROI calculations, costs, and financial projections</p>
+                    <button className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                      Generate PDF
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -710,6 +792,27 @@ const UnlockedContentTabs = ({ data, calculatedMetrics, chartData }: any) => {
       )}
     </div>
   );
+
+  // Helper function to generate chart data
+  const generateChartData = () => {
+    const data = [];
+    const initialCo2 = 19 * (appState.roofSize || 1000);
+    let cumulativeOffset = 0;
+    
+    for (let year = 0; year <= 50; year++) {
+      cumulativeOffset += calculatedMetrics.totalCo2PerYear;
+      const netCo2 = Math.max(0, initialCo2 - cumulativeOffset);
+      
+      data.push({
+        year,
+        cumulativeOffset,
+        netCo2,
+        solarGeneration: calculatedMetrics.solarEnergyPerYear
+      });
+    }
+    
+    return data;
+  };
 };
 
 export default function RoofImpactWizard() {
