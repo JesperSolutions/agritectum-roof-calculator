@@ -456,7 +456,7 @@ export default function CustomRoofDesigner({ roofSize, location, onConfiguration
                       type="range"
                       min="0"
                       max="100"
-                      step="0.1"
+                      step="5"
                       value={element.percentage}
                       onChange={(e) => updateElement(element.id, { percentage: parseFloat(e.target.value) })}
                       className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"

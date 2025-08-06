@@ -397,15 +397,91 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
                     <span>Environmental Impact Profile</span>
                   </h3>
                   <div className="relative w-80 h-80 mx-auto">
-                    {/* This would be replaced with an actual radar chart component */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-64 h-64 border-2 border-green-200 rounded-full relative">
-                        <div className="absolute inset-4 border border-green-300 rounded-full"></div>
-                        <div className="absolute inset-8 border border-green-400 rounded-full"></div>
-                        <div className="absolute inset-12 border border-green-500 rounded-full"></div>
+                    <svg width="320" height="320" viewBox="0 0 320 320" className="mx-auto">
+                      {/* Grid circles */}
+                      <circle cx="160" cy="160" r="120" fill="none" stroke="#d1fae5" strokeWidth="1" />
+                      <circle cx="160" cy="160" r="90" fill="none" stroke="#a7f3d0" strokeWidth="1" />
+                      <circle cx="160" cy="160" r="60" fill="none" stroke="#6ee7b7" strokeWidth="1" />
+                      <circle cx="160" cy="160" r="30" fill="none" stroke="#34d399" strokeWidth="1" />
+                      
+                      {/* Grid lines */}
+                      {Object.keys(environmentalProfile).map((_, index) => {
+                        const angle = (index * 60) - 90;
+                        const radian = (angle * Math.PI) / 180;
+                        const x2 = 160 + Math.cos(radian) * 120;
+                        const y2 = 160 + Math.sin(radian) * 120;
+                        return (
+                          <line
+                            key={index}
+                            x1="160"
+                            y1="160"
+                            x2={x2}
+                            y2={y2}
+                            stroke="#d1fae5"
+                            strokeWidth="1"
+                          />
+                        );
+                      })}
+                      
+                      {/* Data polygon */}
+                      <polygon
+                        points={Object.entries(environmentalProfile).map(([key, value], index) => {
+                          const angle = (index * 60) - 90;
+                          const radian = (angle * Math.PI) / 180;
+                          const radius = (value / 100) * 120;
+                          const x = 160 + Math.cos(radian) * radius;
+                          const y = 160 + Math.sin(radian) * radius;
+                          return `${x},${y}`;
+                        }).join(' ')}
+                        fill="rgba(34, 197, 94, 0.2)"
+                        stroke="#22c55e"
+                        strokeWidth="2"
+                      />
                         
-                        {/* Data points */}
-                        {Object.entries(environmentalProfile).map(([key, value], index) => {
+                      {/* Data points */}
+                      {Object.entries(environmentalProfile).map(([key, value], index) => {
+                        const angle = (index * 60) - 90;
+                        const radian = (angle * Math.PI) / 180;
+                        const radius = (value / 100) * 120;
+                        const x = 160 + Math.cos(radian) * radius;
+                        const y = 160 + Math.sin(radian) * radius;
+                        
+                        return (
+                          <circle
+                            key={key}
+                            cx={x}
+                            cy={y}
+                            r="4"
+                            fill="#22c55e"
+                            stroke="#ffffff"
+                            strokeWidth="2"
+                          />
+                        );
+                      })}
+                      
+                      {/* Labels */}
+                      {Object.keys(environmentalProfile).map((key, index) => {
+                        const angle = (index * 60) - 90;
+                        const radian = (angle * Math.PI) / 180;
+                        const x = 160 + Math.cos(radian) * 140;
+                        const y = 160 + Math.sin(radian) * 140;
+                        
+                        return (
+                          <text
+                            key={key}
+                            x={x}
+                            y={y}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            className="text-xs font-medium fill-gray-700"
+                          >
+                            {key}
+                          </text>
+                        );
+                      })}
+                    </svg>
+                  </div>
+                </div>
                           const angle = (index * 60) - 90; // 6 points, 60 degrees apart
                           const radian = (angle * Math.PI) / 180;
                           const radius = (value / 100) * 120; // Scale to chart size

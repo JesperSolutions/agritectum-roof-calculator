@@ -261,13 +261,8 @@ export default function EnhancedLeadCaptureModal({
   const handleEmailSent = () => {
     setCurrentStep('success');
     
-    // Auto-close after 3 seconds
+    // Auto-close after 2 seconds and trigger callback
     setTimeout(() => {
-      // Call the callback when actually closing
-      if (onLeadCaptured) {
-        onLeadCaptured();
-      }
-      
       onClose();
       setCurrentStep('form');
       // Reset form data
@@ -292,7 +287,12 @@ export default function EnhancedLeadCaptureModal({
         acceptPrivacy: false,
         acceptNewsletter: false
       });
-    }, 3000);
+      
+      // Call the callback after closing
+      if (onLeadCaptured) {
+        onLeadCaptured();
+      }
+    }, 2000);
   };
 
   const addSpecialRequirement = () => {
