@@ -482,42 +482,7 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
                     </svg>
                   </div>
                 </div>
-                          const angle = (index * 60) - 90; // 6 points, 60 degrees apart
-                          const radian = (angle * Math.PI) / 180;
-                          const radius = (value / 100) * 120; // Scale to chart size
-                          const x = Math.cos(radian) * radius + 128;
-                          const y = Math.sin(radian) * radius + 128;
-                          
-                          return (
-                            <div
-                              key={key}
-                              className="absolute w-3 h-3 bg-green-500 rounded-full transform -translate-x-1/2 -translate-y-1/2 shadow-lg"
-                              style={{ left: x, top: y }}
-                            />
-                          );
-                        })}
-                        
-                        {/* Labels */}
-                        {Object.keys(environmentalProfile).map((key, index) => {
-                          const angle = (index * 60) - 90;
-                          const radian = (angle * Math.PI) / 180;
-                          const x = Math.cos(radian) * 140 + 128;
-                          const y = Math.sin(radian) * 140 + 128;
-                          
-                          return (
-                            <div
-                              key={key}
-                              className="absolute text-xs font-medium text-gray-700 transform -translate-x-1/2 -translate-y-1/2"
-                              style={{ left: x, top: y }}
-                            >
-                              {key}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+               </div>
 
                 {/* Detailed Metrics */}
                 <div className="space-y-6">
