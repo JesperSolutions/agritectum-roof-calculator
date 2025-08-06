@@ -14,12 +14,12 @@ interface EnhancedLeadCaptureModalProps {
     includeSolar: boolean;
     totalCo2PerYear: number;
     totalEnergyPerYear: number;
-    noxPerYear: number;
+    totalNoxPerYear: number;
     neutralYear: number | null;
     totalInstallationCost: number;
-    solarEnergyPerYear: number;
+    totalSolarEnergyPerYear: number;
     installationDays: number;
-    annualSavings: number;
+    totalAnnualSavings: number;
     paybackYears: number;
     maintenanceCost: number;
     location?: any;
@@ -41,7 +41,7 @@ interface FormData {
   acceptNewsletter: boolean;
 }
 
-// EmailJS configuration - these should be environment variables in production
+// EmailJS configuration - replace with your actual values
 const EMAILJS_SERVICE_ID = 'service_labcoh9';
 const EMAILJS_TEMPLATE_ID = 'template_pac9jom';
 const EMAILJS_PUBLIC_KEY = 'BCoUz6Ty8c0oza6pZ';
@@ -106,7 +106,7 @@ export default function EnhancedLeadCaptureModal({
         to_email: 'info@agritectum.com',
         from_name: formData.name,
         from_email: formData.email,
-        subject: `New Report Request from ${formData.name}`,
+        subject: `New Roof Analysis Request from ${formData.name}`,
         
         // Customer information
         customer_name: formData.name,
@@ -124,13 +124,14 @@ export default function EnhancedLeadCaptureModal({
         calc_solar_panels: calculatorData.includeSolar ? 'Yes' : 'No',
         annual_co2_offset: `${calculatorData.totalCo2PerYear.toLocaleString()} kg/year`,
         annual_energy_impact: `${calculatorData.totalEnergyPerYear.toLocaleString()} kWh/year`,
-        annual_nox_reduction: `${calculatorData.noxPerYear.toLocaleString()} kg/year`,
-        carbon_neutral_timeline: calculatorData.neutralYear ? `${calculatorData.neutralYear} years` : 'Not achievable',
+        annual_nox_reduction: `${calculatorData.totalNoxPerYear.toLocaleString()} kg/year`,
+        carbon_neutral_timeline: calculatorData.neutralYear ? `${calculatorData.neutralYear} years` : 'Not achievable with current configuration',
         total_installation_cost: `€${calculatorData.totalInstallationCost.toLocaleString()}`,
-        annual_savings: `€${calculatorData.annualSavings.toLocaleString()}`,
-        payback_period: calculatorData.paybackYears === 999 ? 'No payback' : `${calculatorData.paybackYears} years`,
-        solar_generation: calculatorData.includeSolar ? `${calculatorData.solarEnergyPerYear.toLocaleString()} kWh/year` : 'N/A',
+        annual_savings: `€${calculatorData.totalAnnualSavings.toLocaleString()}`,
+        payback_period: calculatorData.paybackYears === 999 ? 'No financial payback' : `${calculatorData.paybackYears} years`,
+        solar_generation: calculatorData.includeSolar ? `${calculatorData.totalSolarEnergyPerYear.toLocaleString()} kWh/year` : 'No solar panels',
         location: calculatorData.location ? calculatorData.location.address : 'Not provided',
+        installation_time: `${calculatorData.installationDays} days`,
         
         newsletter_subscription: formData.acceptNewsletter ? 'Yes' : 'No',
         submission_date: new Date().toLocaleDateString(),
@@ -185,7 +186,7 @@ export default function EnhancedLeadCaptureModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">
-            {currentStep === 'form' ? 'Get Your Personal Roof Assessment' : 'Thank You!'}
+            {currentStep === 'form' ? 'Get Your Detailed Roof Analysis' : 'Thank You!'}
           </h2>
           <button
             onClick={onClose}
@@ -200,10 +201,15 @@ export default function EnhancedLeadCaptureModal({
           <div className="p-6">
             <div className="text-center">
               <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Thank You!</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Request Submitted Successfully!</h3>
               <p className="text-gray-600 mb-4">
-                We've received your request and will get back to you shortly with a personal evaluation.
+                We've received your roof analysis request and will send you a detailed report within 24 hours.
               </p>
+              <div className="bg-green-50 rounded-lg p-4 mb-4">
+                <p className="text-sm text-green-800">
+                  <strong>What's next:</strong> Our experts will review your configuration and send you a comprehensive analysis including installation recommendations, local contractor contacts, and financing options.
+                </p>
+              </div>
               <p className="text-sm text-gray-500">
                 This window will close automatically in a few seconds...
               </p>
@@ -214,13 +220,25 @@ export default function EnhancedLeadCaptureModal({
         {/* Form Step */}
         {currentStep === 'form' && (
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {/* Value Proposition */}
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 mb-6">
+              <h3 className="font-semibold text-gray-900 mb-2">🎯 What you'll receive:</h3>
+              <ul className="text-sm text-gray-700 space-y-1">
+                <li>• Detailed 50-year environmental impact analysis</li>
+                <li>• Professional installation timeline and cost breakdown</li>
+                <li>• Local certified contractor recommendations</li>
+                <li>• Financing options and incentive programs</li>
+                <li>• Personalized maintenance schedule</li>
+              </ul>
+            </div>
+
             {/* Personal Information */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Name *
+                    Full Name *
                   </label>
                   <input
                     type="text"
@@ -235,7 +253,7 @@ export default function EnhancedLeadCaptureModal({
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email *
+                    Email Address *
                   </label>
                   <input
                     type="email"
@@ -250,7 +268,7 @@ export default function EnhancedLeadCaptureModal({
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone
+                    Phone Number
                   </label>
                   <input
                     type="tel"
@@ -277,7 +295,7 @@ export default function EnhancedLeadCaptureModal({
 
             {/* Project Details */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Project Details</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Project Information</h3>
               <div className="grid md:grid-cols-2 gap-6 mb-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -293,7 +311,7 @@ export default function EnhancedLeadCaptureModal({
                     <option value="3-months">Within 3 months</option>
                     <option value="6-months">Within 6 months</option>
                     <option value="1-year">Within 1 year</option>
-                    <option value="planning">Just planning</option>
+                    <option value="planning">Just planning / researching</option>
                   </select>
                 </div>
                 <div>
@@ -306,7 +324,8 @@ export default function EnhancedLeadCaptureModal({
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   >
                     <option value="">Select budget range</option>
-                    <option value="under-50k">Under €50,000</option>
+                    <option value="under-25k">Under €25,000</option>
+                    <option value="25k-50k">€25,000 - €50,000</option>
                     <option value="50k-100k">€50,000 - €100,000</option>
                     <option value="100k-200k">€100,000 - €200,000</option>
                     <option value="over-200k">Over €200,000</option>
@@ -319,14 +338,14 @@ export default function EnhancedLeadCaptureModal({
             {/* Additional Notes */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Additional Notes (Optional)
+                Additional Information (Optional)
               </label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 rows={3}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Any additional information or specific requirements..."
+                placeholder="Any specific requirements, questions, or additional information about your project..."
               />
             </div>
 
@@ -342,7 +361,8 @@ export default function EnhancedLeadCaptureModal({
                   }`}
                 />
                 <span className="text-sm text-gray-700">
-                  I accept the privacy policy and consent to being contacted about my roof project with detailed analysis results *
+                  I consent to being contacted about my roof project and receiving the detailed analysis report. 
+                  Your information will be used solely for providing the requested analysis and will not be shared with third parties. *
                 </span>
               </label>
               {errors.acceptPrivacy && <p className="text-red-500 text-sm">{errors.acceptPrivacy}</p>}
@@ -355,7 +375,7 @@ export default function EnhancedLeadCaptureModal({
                   className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 mt-0.5"
                 />
                 <span className="text-sm text-gray-700">
-                  Yes, I'd like to receive updates about sustainable roofing solutions and industry insights
+                  Yes, I'd like to receive occasional updates about sustainable roofing solutions, industry insights, and new technologies (you can unsubscribe anytime)
                 </span>
               </label>
             </div>
@@ -372,7 +392,7 @@ export default function EnhancedLeadCaptureModal({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                className="px-8 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2 font-semibold"
               >
                 {isSubmitting ? (
                   <>

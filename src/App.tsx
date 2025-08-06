@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TrendingUp, ChevronRight, ChevronLeft, Lock, Unlock, MapPin, Home, Award, Wrench, User, Settings, Sun } from 'lucide-react';
+import { TrendingUp, ChevronRight, ChevronLeft, Lock, Unlock, MapPin, Home, Award, Wrench, User, Settings, Sun, Plus, Minus } from 'lucide-react';
 import EnhancedLeadCaptureModal from './components/EnhancedLeadCaptureModal';
 import LocationSelector from './components/LocationSelector';
 import EnhancedCharts from './components/EnhancedCharts';
@@ -21,11 +21,16 @@ const SOLAR_SPECS = {
   lifespan: 25 // years
 };
 
-interface AppState {
-  roofSize: number;
+interface RoofSegment {
+  id: string;
+  name: string;
+  size: number;
   roofType: keyof typeof ROOF_TYPES;
   includeSolar: boolean;
-  useMetric: boolean;
+}
+
+interface AppState {
+  roofSegments: RoofSegment[];
   location: LocationData | null;
   userRole: UserRole;
   hasProvidedContact: boolean;
@@ -184,15 +189,48 @@ const LocationStep = ({ data, onUpdate, onNext, onBack }: any) => {
 };
 
 const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
-  const [roofSize, setRoofSize] = useState(data.roofSize || 1000);
-  const [roofType, setRoofType] = useState(data.roofType || 'Standard Roofing');
-  const [includeSolar, setIncludeSolar] = useState(data.includeSolar || false);
+  const [roofSegments, setRoofSegments] = useState<RoofSegment[]>(
+    data.roofSegments?.length > 0 ? data.roofSegments : [
+      {
+        id: '1',
+        name: 'Main Roof Area',
+        size: 1000,
+        roofType: 'Standard Roofing',
+        includeSolar: false
+      }
+    ]
+  );
 
-  const quickSizes = [500, 1000, 2000, 5000];
-
-  const handleUpdate = (updates: any) => {
-    onUpdate(updates);
+  const addSegment = () => {
+    const newSegment: RoofSegment = {
+      id: Date.now().toString(),
+      name: `Roof Section ${roofSegments.length + 1}`,
+      size: 500,
+      roofType: 'Standard Roofing',
+      includeSolar: false
+    };
+    const newSegments = [...roofSegments, newSegment];
+    setRoofSegments(newSegments);
+    onUpdate({ roofSegments: newSegments });
   };
+
+  const removeSegment = (id: string) => {
+    if (roofSegments.length > 1) {
+      const newSegments = roofSegments.filter(segment => segment.id !== id);
+      setRoofSegments(newSegments);
+      onUpdate({ roofSegments: newSegments });
+    }
+  };
+
+  const updateSegment = (id: string, updates: Partial<RoofSegment>) => {
+    const newSegments = roofSegments.map(segment =>
+      segment.id === id ? { ...segment, ...updates } : segment
+    );
+    setRoofSegments(newSegments);
+    onUpdate({ roofSegments: newSegments });
+  };
+
+  const totalRoofSize = roofSegments.reduce((sum, segment) => sum + segment.size, 0);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -200,141 +238,147 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
         <Settings className="w-16 h-16 mx-auto mb-4 text-purple-600" />
         <h2 className="text-3xl font-bold text-gray-900 mb-4">Configure Your Roof System</h2>
         <p className="text-lg text-gray-600">
-          Tell us about your roof size and choose your preferred sustainable solution.
+          Divide your roof into sections and choose the best solution for each area.
         </p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-8 mb-8 space-y-8">
-        {/* Roof Size Input */}
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Home className="w-5 h-5 text-blue-600" />
-            <label className="block text-lg font-semibold text-gray-900">
-              Roof Size (m²)
-            </label>
-            <HelpTooltip content="Enter the total roof area for accurate calculations" />
-          </div>
-          
-          <div className="relative">
-            <input
-              type="number"
-              value={roofSize}
-              onChange={(e) => {
-                const newSize = parseInt(e.target.value) || 0;
-                setRoofSize(newSize);
-                handleUpdate({ roofSize: newSize });
-              }}
-              className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-lg font-medium pr-16"
-              placeholder="Enter area in m²"
-              min="1"
-            />
-            <div className="absolute inset-y-0 right-0 flex items-center pr-4">
-              <span className="text-gray-500 text-sm font-medium">m²</span>
+      <div className="bg-white rounded-xl border border-gray-200 p-8 mb-8">
+        {/* Total Roof Size Display */}
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-8">
+          <div className="text-center">
+            <div className="text-4xl font-bold text-gray-900 mb-2">
+              {totalRoofSize.toLocaleString()} m²
             </div>
-          </div>
-          
-          <div className="flex flex-wrap gap-2">
-            {quickSizes.map((size) => (
-              <button
-                key={size}
-                onClick={() => {
-                  setRoofSize(size);
-                  handleUpdate({ roofSize: size });
-                }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  roofSize === size 
-                    ? 'bg-blue-100 text-blue-700 border border-blue-300' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
-                }`}
-              >
-                {size.toLocaleString()}
-              </button>
-            ))}
+            <div className="text-lg text-gray-600">Total Roof Area</div>
+            <div className="text-sm text-gray-500 mt-1">
+              {roofSegments.length} section{roofSegments.length !== 1 ? 's' : ''}
+            </div>
           </div>
         </div>
 
-        {/* Roof Type Selection */}
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Award className="w-5 h-5 text-green-600" />
-            <label className="block text-lg font-semibold text-gray-900">
-              Roof Solution
-            </label>
-            <HelpTooltip content="Choose the roofing technology that best fits your needs" />
+        {/* Roof Segments */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-semibold text-gray-900">Roof Sections</h3>
+            <button
+              onClick={addSegment}
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Section</span>
+            </button>
           </div>
-          
-          <div className="grid grid-cols-1 gap-4">
-            {Object.entries(ROOF_TYPES).map(([type, typeData]) => (
-              <button
-                key={type}
-                onClick={() => {
-                  setRoofType(type as keyof typeof ROOF_TYPES);
-                  handleUpdate({ roofType: type });
-                }}
-                className={`p-6 rounded-xl border-2 transition-all duration-200 text-left ${
-                  roofType === type
-                    ? 'border-green-500 bg-green-50 shadow-md'
-                    : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div 
-                      className="w-6 h-6 rounded-full"
-                      style={{ backgroundColor: typeData.color }}
-                    />
-                    <div>
-                      <div className="font-semibold text-gray-900 text-lg">{type}</div>
-                      <div className="text-sm text-gray-600 mt-1">{typeData.description}</div>
-                      <div className="text-xs text-gray-500 mt-2">
-                        {typeData.lifespan} year lifespan • {typeData.maintenance}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-gray-900">
-                      {typeData.totalCost > 0 ? `€${typeData.totalCost.toFixed(2)}/m²` : 'Baseline'}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {typeData.co2 > 0 ? `${typeData.co2} kg CO₂/m²/year` : 'No CO₂ benefit'}
-                    </div>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
 
-        {/* Solar Panel Option */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-6 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-xl">
-                <Sun className="w-6 h-6 text-yellow-600" />
-              </div>
-              <div>
-                <div className="flex items-center space-x-2">
-                  <h3 className="text-lg font-semibold text-gray-900">Add Solar Panels</h3>
-                  <HelpTooltip content="Solar panels generate renewable energy and significantly increase your environmental impact and savings" />
+          {roofSegments.map((segment, index) => (
+            <div key={segment.id} className="border border-gray-200 rounded-xl p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-semibold text-blue-600">{index + 1}</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={segment.name}
+                    onChange={(e) => updateSegment(segment.id, { name: e.target.value })}
+                    className="text-lg font-semibold text-gray-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2"
+                  />
                 </div>
-                <p className="text-sm text-gray-600">
-                  Generate renewable energy and increase your savings (€150/m² additional cost)
-                </p>
+                {roofSegments.length > 1 && (
+                  <button
+                    onClick={() => removeSegment(segment.id)}
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-6">
+                {/* Size Input */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Area (m²)
+                  </label>
+                  <input
+                    type="number"
+                    value={segment.size}
+                    onChange={(e) => updateSegment(segment.id, { size: parseInt(e.target.value) || 0 })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    min="1"
+                  />
+                </div>
+
+                {/* Roof Type Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Roof Solution
+                  </label>
+                  <select
+                    value={segment.roofType}
+                    onChange={(e) => updateSegment(segment.id, { roofType: e.target.value as keyof typeof ROOF_TYPES })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    {Object.entries(ROOF_TYPES).map(([type, typeData]) => (
+                      <option key={type} value={type}>
+                        {type} {typeData.totalCost > 0 ? `(€${typeData.totalCost}/m²)` : '(Baseline)'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Solar Toggle */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Solar Panels
+                  </label>
+                  <div className="flex items-center space-x-3 h-12">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={segment.includeSolar}
+                        onChange={(e) => updateSegment(segment.id, { includeSolar: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                    </label>
+                    <span className="text-sm text-gray-600">
+                      {segment.includeSolar ? 'Included' : 'Not included'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Segment Details */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div>
+                    <div className="text-lg font-semibold text-gray-900">
+                      €{(ROOF_TYPES[segment.roofType].totalCost * segment.size + (segment.includeSolar ? 150 * segment.size : 0)).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-600">Total Cost</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold text-green-600">
+                      {Math.round(ROOF_TYPES[segment.roofType].co2 * segment.size + (segment.includeSolar ? segment.size * 0.2 * 1100 * 0.75 * 0.4 / 1000 : 0))}
+                    </div>
+                    <div className="text-xs text-gray-600">kg CO₂/year</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold text-blue-600">
+                      {Math.round(ROOF_TYPES[segment.roofType].energy * segment.size + (segment.includeSolar ? segment.size * 0.2 * 1100 * 0.75 / 1000 : 0)).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-600">kWh/year</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold text-purple-600">
+                      {ROOF_TYPES[segment.roofType].lifespan}
+                    </div>
+                    <div className="text-xs text-gray-600">Years Lifespan</div>
+                  </div>
+                </div>
               </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={includeSolar}
-                onChange={(e) => {
-                  setIncludeSolar(e.target.checked);
-                  handleUpdate({ includeSolar: e.target.checked });
-                }}
-                className="sr-only peer"
-              />
-              <div className="w-14 h-8 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-yellow-500"></div>
-            </label>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -348,7 +392,7 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
         </button>
         <button
           onClick={onNext}
-          disabled={!roofSize || roofSize < 1}
+          disabled={totalRoofSize < 1}
           className="flex items-center space-x-2 px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <span>View Results</span>
@@ -401,23 +445,23 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
 
   // Generate chart data for unlocked content
   const generateChartData = () => {
-    const data = [];
-    const initialCo2 = 19 * (calculatedMetrics.roofSizeM2 || 1000);
+    const chartData = [];
+    const initialCo2 = 19 * calculatedMetrics.totalRoofSize;
     let cumulativeOffset = 0;
     
     for (let year = 0; year <= 50; year++) {
       cumulativeOffset += calculatedMetrics.totalCo2PerYear;
       const netCo2 = Math.max(0, initialCo2 - cumulativeOffset);
       
-      data.push({
+      chartData.push({
         year,
         cumulativeOffset,
         netCo2,
-        solarGeneration: calculatedMetrics.solarEnergyPerYear || 0
+        solarGeneration: calculatedMetrics.totalSolarEnergyPerYear || 0
       });
     }
     
-    return data;
+    return chartData;
   };
 
   return (
@@ -428,7 +472,7 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
         </div>
         <h2 className="text-3xl font-bold text-gray-900 mb-4">Your Roof System Analysis</h2>
         <p className="text-lg text-gray-600">
-          Comprehensive analysis of your roof design and its environmental impact.
+          Comprehensive analysis of your {data.roofSegments?.length || 1} roof section{(data.roofSegments?.length || 1) !== 1 ? 's' : ''} and environmental impact.
         </p>
       </div>
 
@@ -493,7 +537,7 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
                   </div>
                   <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
                     <div className="text-4xl font-bold text-blue-600 mb-2">
-                      €{calculatedMetrics.annualSavings.toLocaleString()}
+                      €{calculatedMetrics.totalAnnualSavings.toLocaleString()}
                     </div>
                     <div className="text-sm text-blue-700 font-medium">Annual Savings</div>
                     <div className="text-xs text-blue-600 mt-1">Per year</div>
@@ -512,6 +556,61 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
                     <div className="text-sm text-orange-700 font-medium">Annual CO₂ Offset</div>
                     <div className="text-xs text-orange-600 mt-1">kg per year</div>
                   </div>
+                </div>
+              </div>
+
+              {/* Roof Segments Breakdown */}
+              <div className="bg-white rounded-xl border border-gray-200 p-8 mb-8 shadow-lg">
+                <h3 className="text-xl font-semibold text-gray-900 mb-6">Roof Sections Breakdown</h3>
+                <div className="space-y-4">
+                  {data.roofSegments?.map((segment: RoofSegment, index: number) => {
+                    const segmentData = ROOF_TYPES[segment.roofType];
+                    const segmentCost = segmentData.totalCost * segment.size + (segment.includeSolar ? 150 * segment.size : 0);
+                    const segmentCo2 = Math.round(segmentData.co2 * segment.size + (segment.includeSolar ? segment.size * 0.2 * 1100 * 0.75 * 0.4 / 1000 : 0));
+                    const segmentEnergy = Math.round(segmentData.energy * segment.size + (segment.includeSolar ? segment.size * 0.2 * 1100 * 0.75 / 1000 : 0));
+                    
+                    return (
+                      <div key={segment.id} className="border border-gray-200 rounded-lg p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-semibold text-blue-600">{index + 1}</span>
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900">{segment.name}</h4>
+                              <p className="text-sm text-gray-600">
+                                {segment.size.toLocaleString()} m² • {segment.roofType}
+                                {segment.includeSolar && ' • Solar Panels'}
+                              </p>
+                            </div>
+                          </div>
+                          <div 
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: segmentData.color }}
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="text-center p-3 bg-gray-50 rounded-lg">
+                            <div className="text-lg font-bold text-gray-900">€{segmentCost.toLocaleString()}</div>
+                            <div className="text-xs text-gray-600">Investment</div>
+                          </div>
+                          <div className="text-center p-3 bg-green-50 rounded-lg">
+                            <div className="text-lg font-bold text-green-600">{segmentCo2}</div>
+                            <div className="text-xs text-green-700">kg CO₂/year</div>
+                          </div>
+                          <div className="text-center p-3 bg-blue-50 rounded-lg">
+                            <div className="text-lg font-bold text-blue-600">{segmentEnergy.toLocaleString()}</div>
+                            <div className="text-xs text-blue-700">kWh/year</div>
+                          </div>
+                          <div className="text-center p-3 bg-purple-50 rounded-lg">
+                            <div className="text-lg font-bold text-purple-600">{segmentData.lifespan}</div>
+                            <div className="text-xs text-purple-700">Years</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -539,7 +638,7 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
                   <div className="text-center">
                     <div className="text-3xl mb-2">🌬️</div>
                     <div className="text-2xl font-bold text-purple-600 mb-1">
-                      {calculatedMetrics.noxPerYear.toFixed(1)}
+                      {calculatedMetrics.totalNoxPerYear.toFixed(1)}
                     </div>
                     <div className="text-sm text-gray-600">kg NOₓ reduction per year</div>
                   </div>
@@ -580,11 +679,11 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
             <div className="space-y-6">
               <EnhancedCharts 
                 chartData={generateChartData()}
-                roofType={data.roofType || 'Standard Roofing'}
-                includeSolar={data.includeSolar || false}
+                roofType="Mixed Configuration"
+                includeSolar={data.roofSegments?.some((s: RoofSegment) => s.includeSolar) || false}
                 totalCo2PerYear={calculatedMetrics.totalCo2PerYear}
                 totalEnergyPerYear={calculatedMetrics.totalEnergyPerYear}
-                noxPerYear={calculatedMetrics.noxPerYear}
+                noxPerYear={calculatedMetrics.totalNoxPerYear}
                 location={data.location}
               />
             </div>
@@ -593,9 +692,9 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
           {data.hasProvidedContact && activeTab === 'recommendations' && (
             <div className="space-y-6">
               <SmartRecommendations
-                roofSize={data.roofSize || 1000}
-                roofType={data.roofType || 'Standard Roofing'}
-                includeSolar={data.includeSolar || false}
+                roofSize={calculatedMetrics.totalRoofSize}
+                roofType="Mixed Configuration"
+                includeSolar={data.roofSegments?.some((s: RoofSegment) => s.includeSolar) || false}
                 location={data.location}
                 totalCo2PerYear={calculatedMetrics.totalCo2PerYear}
                 totalEnergyPerYear={calculatedMetrics.totalEnergyPerYear}
@@ -625,11 +724,11 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
         isOpen={showLeadModal}
         onClose={() => setShowLeadModal(false)}
         calculatorData={{
-          roofSize: data.roofSize || 1000,
-          roofSizeDisplay: data.roofSize || 1000,
+          roofSize: calculatedMetrics.totalRoofSize,
+          roofSizeDisplay: calculatedMetrics.totalRoofSize,
           unit: 'm²',
-          roofType: data.roofType || 'Standard Roofing',
-          includeSolar: data.includeSolar || false,
+          roofType: 'Mixed Configuration',
+          includeSolar: data.roofSegments?.some((s: RoofSegment) => s.includeSolar) || false,
           ...calculatedMetrics,
           location: data.location,
           useMetric: true
@@ -645,10 +744,15 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
 export default function RoofImpactWizard() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [appState, setAppState] = useState<AppState>({
-    roofSize: 1000,
-    roofType: "Standard Roofing",
-    includeSolar: false,
-    useMetric: true,
+    roofSegments: [
+      {
+        id: '1',
+        name: 'Main Roof Area',
+        size: 1000,
+        roofType: 'Standard Roofing',
+        includeSolar: false
+      }
+    ],
     location: null,
     userRole: null,
     hasProvidedContact: false
@@ -658,64 +762,85 @@ export default function RoofImpactWizard() {
     setAppState(prev => ({ ...prev, ...updates }));
   };
 
-  // Fixed calculation logic
+  // Calculate metrics for all roof segments
   const calculateMetrics = () => {
-    const data = ROOF_TYPES[appState.roofType];
-    const roofSizeM2 = appState.roofSize;
-    
-    // Base roof calculations - only apply benefits if it's not standard roofing
-    const co2PerYear = data.co2 * roofSizeM2;
-    const noxPerYear = data.nox * roofSizeM2;
-    const energyPerYear = data.energy * roofSizeM2;
-    
-    // Solar calculations
+    let totalInstallationCost = 0;
+    let totalCo2PerYear = 0;
+    let totalEnergyPerYear = 0;
+    let totalNoxPerYear = 0;
+    let totalSolarEnergyPerYear = 0;
+    let totalRoofSize = 0;
+    let totalAnnualSavings = 0;
+
+    // Location multiplier for solar calculations
     const locationMultiplier = appState.location ? (appState.location.solarIrradiance / 1100) : 1;
     const adjustedSolarHours = SOLAR_SPECS.hoursPerDay * locationMultiplier;
-    
-    const solarEnergyPerYear = appState.includeSolar 
-      ? (SOLAR_SPECS.powerPerM2 * roofSizeM2 * adjustedSolarHours 
-          * SOLAR_SPECS.daysPerYear * SOLAR_SPECS.performanceFactor) / 1000 
-      : 0;
-    
-    const solarCo2PerYear = appState.includeSolar ? solarEnergyPerYear * SOLAR_SPECS.co2PerKwh : 0;
-    const solarCost = appState.includeSolar ? SOLAR_SPECS.costPerM2 * roofSizeM2 : 0;
-    
-    // Total calculations
-    const totalEnergyPerYear = energyPerYear + solarEnergyPerYear;
-    const totalCo2PerYear = co2PerYear + solarCo2PerYear;
-    
-    // Carbon neutral calculation - only if there's actual CO2 benefit
-    const initialCo2 = 19 * roofSizeM2; // Manufacturing footprint
+
+    appState.roofSegments.forEach(segment => {
+      const roofData = ROOF_TYPES[segment.roofType];
+      totalRoofSize += segment.size;
+
+      // Base roof calculations
+      const segmentCo2 = roofData.co2 * segment.size;
+      const segmentNox = roofData.nox * segment.size;
+      const segmentEnergy = roofData.energy * segment.size;
+      const segmentCost = roofData.totalCost * segment.size;
+
+      // Solar calculations for this segment
+      let segmentSolarEnergy = 0;
+      let segmentSolarCo2 = 0;
+      let segmentSolarCost = 0;
+
+      if (segment.includeSolar) {
+        segmentSolarEnergy = (SOLAR_SPECS.powerPerM2 * segment.size * adjustedSolarHours 
+          * SOLAR_SPECS.daysPerYear * SOLAR_SPECS.performanceFactor) / 1000;
+        segmentSolarCo2 = segmentSolarEnergy * SOLAR_SPECS.co2PerKwh;
+        segmentSolarCost = SOLAR_SPECS.costPerM2 * segment.size;
+      }
+
+      // Add to totals
+      totalInstallationCost += segmentCost + segmentSolarCost;
+      totalCo2PerYear += segmentCo2 + segmentSolarCo2;
+      totalEnergyPerYear += segmentEnergy + segmentSolarEnergy;
+      totalNoxPerYear += segmentNox;
+      totalSolarEnergyPerYear += segmentSolarEnergy;
+
+      // Calculate savings for this segment
+      const segmentSavings = (segmentEnergy + segmentSolarEnergy) * 0.25; // €0.25 per kWh
+      totalAnnualSavings += segmentSavings;
+    });
+
+    // Calculate payback period
+    const paybackYears = totalInstallationCost > 0 && totalAnnualSavings > 0 
+      ? totalInstallationCost / totalAnnualSavings 
+      : 999;
+
+    // Carbon neutral calculation
+    const initialCo2 = 19 * totalRoofSize; // Manufacturing footprint
     const neutralYear = totalCo2PerYear > 0 ? Math.ceil(initialCo2 / totalCo2PerYear) : null;
-    
-    // Cost calculations
-    const totalInstallationCost = (data.totalCost * roofSizeM2) + solarCost;
-    const installationTimeHours = data.installationRate > 0 ? roofSizeM2 / data.installationRate : 0;
-    const solarInstallationHours = appState.includeSolar ? roofSizeM2 / 20 : 0;
-    const totalInstallationHours = installationTimeHours + solarInstallationHours;
+
+    // Installation time calculation
+    let totalInstallationHours = 0;
+    appState.roofSegments.forEach(segment => {
+      const roofData = ROOF_TYPES[segment.roofType];
+      const roofHours = roofData.installationRate > 0 ? segment.size / roofData.installationRate : 0;
+      const solarHours = segment.includeSolar ? segment.size / 20 : 0; // 20 m²/hour for solar
+      totalInstallationHours += roofHours + solarHours;
+    });
     const installationDays = Math.ceil(totalInstallationHours / 8);
-    
-    // Financial calculations - only count actual energy savings
-    const energySavingsValue = totalEnergyPerYear * 0.25; // €0.25 per kWh
-    const annualSavings = Math.max(0, energySavingsValue);
-    const paybackYears = totalInstallationCost > 0 && annualSavings > 0 
-      ? totalInstallationCost / annualSavings 
-      : 999; // Very high number if no savings
-    
-    const maintenanceCost = roofSizeM2 * 2;
 
     return {
+      totalRoofSize,
+      totalInstallationCost: Math.round(totalInstallationCost),
       totalCo2PerYear: Math.round(totalCo2PerYear),
       totalEnergyPerYear: Math.round(totalEnergyPerYear),
-      noxPerYear: Math.round(noxPerYear * 10) / 10,
-      neutralYear,
-      totalInstallationCost: Math.round(totalInstallationCost),
-      solarEnergyPerYear: Math.round(solarEnergyPerYear),
-      installationDays: Math.max(1, installationDays),
-      annualSavings: Math.round(annualSavings),
+      totalNoxPerYear: Math.round(totalNoxPerYear * 10) / 10,
+      totalSolarEnergyPerYear: Math.round(totalSolarEnergyPerYear),
+      totalAnnualSavings: Math.round(totalAnnualSavings),
       paybackYears: Math.round(paybackYears * 10) / 10,
-      maintenanceCost: Math.round(maintenanceCost),
-      roofSizeM2
+      neutralYear,
+      installationDays: Math.max(1, installationDays),
+      maintenanceCost: Math.round(totalRoofSize * 2)
     };
   };
 
@@ -741,7 +866,7 @@ export default function RoofImpactWizard() {
       title: 'Roof Configuration',
       description: 'Configure your roof system',
       component: RoofConfigurationStep,
-      isComplete: (data: AppState) => data.roofSize > 0
+      isComplete: (data: AppState) => data.roofSegments.length > 0 && data.roofSegments.every(s => s.size > 0)
     },
     {
       id: 'metrics',
