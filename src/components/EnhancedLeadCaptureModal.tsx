@@ -8,6 +8,7 @@ import type { EmailNotificationData } from '../utils/emailNotificationUtils';
 interface EnhancedLeadCaptureModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onLeadCaptured?: () => void;
   calculatorData: {
     roofSize: number;
     roofSizeDisplay: number;
@@ -60,6 +61,7 @@ const EMAILJS_PUBLIC_KEY = 'BCoUz6Ty8c0oza6pZ';
 export default function EnhancedLeadCaptureModal({ 
   isOpen, 
   onClose, 
+  onLeadCaptured,
   calculatorData, 
   userRole,
   sessionStartTime 
@@ -224,6 +226,11 @@ export default function EnhancedLeadCaptureModal({
       // Move to email step
       setCurrentStep('email');
       
+      // Call the callback if provided
+      if (onLeadCaptured) {
+        onLeadCaptured();
+      }
+      
     } catch (error) {
       console.error('Error submitting form:', error);
       setErrors({ submit: 'There was an error submitting your request. Please try again or contact us directly.' });
@@ -234,6 +241,11 @@ export default function EnhancedLeadCaptureModal({
 
   const handleEmailSent = () => {
     setCurrentStep('success');
+    
+    // Call the callback if provided
+    if (onLeadCaptured) {
+      onLeadCaptured();
+    }
     
     // Auto-close after 3 seconds
     setTimeout(() => {
