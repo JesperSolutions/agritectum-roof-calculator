@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Send, CheckCircle, Mail, Download, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Send, CheckCircle, Mail } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 
 interface EnhancedLeadCaptureModalProps {
@@ -34,23 +34,14 @@ interface FormData {
   email: string;
   phone: string;
   companyName: string;
-  role: string;
-  address: string;
-  roofType: string;
-  roofAge: string;
-  roofArea: number;
-  roofAreaUnit: string;
-  roofDivision: string;
   timeline: string;
   budget: string;
-  goals: string[];
-  specialRequirements: string[];
-  additionalServices: string[];
   notes: string;
   acceptPrivacy: boolean;
   acceptNewsletter: boolean;
 }
 
+// EmailJS configuration - these should be environment variables in production
 const EMAILJS_SERVICE_ID = 'service_labcoh9';
 const EMAILJS_TEMPLATE_ID = 'template_pac9jom';
 const EMAILJS_PUBLIC_KEY = 'BCoUz6Ty8c0oza6pZ';
@@ -69,18 +60,8 @@ export default function EnhancedLeadCaptureModal({
     email: '',
     phone: '',
     companyName: '',
-    role: '',
-    address: '',
-    roofType: '',
-    roofAge: '',
-    roofArea: calculatorData.roofSizeDisplay,
-    roofAreaUnit: calculatorData.unit,
-    roofDivision: calculatorData.roofType,
     timeline: '',
     budget: '',
-    goals: [],
-    specialRequirements: [],
-    additionalServices: [],
     notes: '',
     acceptPrivacy: false,
     acceptNewsletter: false
@@ -127,22 +108,14 @@ export default function EnhancedLeadCaptureModal({
         from_email: formData.email,
         subject: `New Report Request from ${formData.name}`,
         
-        // All the existing template parameters...
+        // Customer information
         customer_name: formData.name,
         customer_email: formData.email,
         customer_phone: formData.phone || 'Not provided',
         company_name: formData.companyName || 'Not provided',
-        role: formData.role || 'Not provided',
-        address: formData.address,
-        roof_type: formData.roofType,
-        roof_age: formData.roofAge || 'Not provided',
-        roof_area: `${formData.roofArea} ${formData.roofAreaUnit}`,
-        current_roof_solution: formData.roofDivision,
+        user_role: userRole || 'Not specified',
         timeline: formData.timeline || 'Not specified',
         budget: formData.budget || 'Not specified',
-        goals: formData.goals.length > 0 ? formData.goals.join(', ') : 'Not specified',
-        special_requirements: formData.specialRequirements.join(', ') || 'None',
-        additional_services: formData.additionalServices.join(', ') || 'None',
         notes: formData.notes || 'None',
         
         // Calculator results
@@ -154,7 +127,10 @@ export default function EnhancedLeadCaptureModal({
         annual_nox_reduction: `${calculatorData.noxPerYear.toLocaleString()} kg/year`,
         carbon_neutral_timeline: calculatorData.neutralYear ? `${calculatorData.neutralYear} years` : 'Not achievable',
         total_installation_cost: `€${calculatorData.totalInstallationCost.toLocaleString()}`,
+        annual_savings: `€${calculatorData.annualSavings.toLocaleString()}`,
+        payback_period: calculatorData.paybackYears === 999 ? 'No payback' : `${calculatorData.paybackYears} years`,
         solar_generation: calculatorData.includeSolar ? `${calculatorData.solarEnergyPerYear.toLocaleString()} kWh/year` : 'N/A',
+        location: calculatorData.location ? calculatorData.location.address : 'Not provided',
         
         newsletter_subscription: formData.acceptNewsletter ? 'Yes' : 'No',
         submission_date: new Date().toLocaleDateString(),
@@ -180,18 +156,8 @@ export default function EnhancedLeadCaptureModal({
           email: '',
           phone: '',
           companyName: '',
-          role: '',
-          address: '',
-          roofType: '',
-          roofAge: '',
-          roofArea: calculatorData.roofSizeDisplay,
-          roofAreaUnit: calculatorData.unit,
-          roofDivision: calculatorData.roofType,
           timeline: '',
           budget: '',
-          goals: [],
-          specialRequirements: [],
-          additionalServices: [],
           notes: '',
           acceptPrivacy: false,
           acceptNewsletter: false
@@ -205,38 +171,17 @@ export default function EnhancedLeadCaptureModal({
       
     } catch (error) {
       console.error('Error submitting form:', error);
-      setErrors({ submit: 'There was an error submitting your request. Please try again or contact us directly.' });
+      setErrors({ submit: 'There was an error submitting your request. Please try again or contact us directly at info@agritectum.com.' });
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const addSpecialRequirement = () => {
-    setFormData(prev => ({
-      ...prev,
-      specialRequirements: [...prev.specialRequirements, '']
-    }));
-  };
-
-  const updateSpecialRequirement = (index: number, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      specialRequirements: prev.specialRequirements.map((req, i) => i === index ? value : req)
-    }));
-  };
-
-  const removeSpecialRequirement = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      specialRequirements: prev.specialRequirements.filter((_, i) => i !== index)
-    }));
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">
@@ -256,8 +201,11 @@ export default function EnhancedLeadCaptureModal({
             <div className="text-center">
               <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Thank You!</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 mb-4">
                 We've received your request and will get back to you shortly with a personal evaluation.
+              </p>
+              <p className="text-sm text-gray-500">
+                This window will close automatically in a few seconds...
               </p>
             </div>
           </div>
@@ -327,7 +275,7 @@ export default function EnhancedLeadCaptureModal({
               </div>
             </div>
 
-            {/* Special Requirements */}
+            {/* Project Details */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Project Details</h3>
               <div className="grid md:grid-cols-2 gap-6 mb-6">
@@ -365,35 +313,6 @@ export default function EnhancedLeadCaptureModal({
                     <option value="not-sure">Not sure yet</option>
                   </select>
                 </div>
-              </div>
-              
-              <h4 className="text-md font-semibold text-gray-900 mb-3">Special Requirements (Optional)</h4>
-              <div className="space-y-3">
-                {formData.specialRequirements.map((requirement, index) => (
-                  <div key={index} className="flex space-x-2">
-                    <input
-                      type="text"
-                      value={requirement}
-                      onChange={(e) => updateSpecialRequirement(index, e.target.value)}
-                      placeholder="Enter special requirement..."
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeSpecialRequirement(index)}
-                      className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={addSpecialRequirement}
-                  className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors text-sm"
-                >
-                  Add Special Requirement
-                </button>
               </div>
             </div>
 

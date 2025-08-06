@@ -32,8 +32,23 @@ export interface LocationData {
   };
 }
 
-// Roof types with corrected calculations
+export type UserRole = 'esg-expert' | 'roofing-specialist' | 'private-individual' | null;
+
+// Simplified roof types with corrected calculations
 export const ROOF_TYPES = {
+  "Standard Roofing": { 
+    co2: 0, 
+    nox: 0, 
+    energy: 0,
+    lifespan: 20, 
+    maintenance: 'Regular maintenance every 5 years.', 
+    color: '#6B7280',
+    materialCost: 0,
+    laborCost: 0,
+    totalCost: 0,
+    installationRate: 100,
+    description: 'Standard roofing materials (baseline)'
+  },
   "Photocatalytic Coating": { 
     co2: 1.94, 
     nox: 0.1, 
@@ -58,7 +73,7 @@ export const ROOF_TYPES = {
     laborCost: 8.57,
     totalCost: 55.55,
     installationRate: 7,
-    description: 'High-performance Triflex coating with SRI 97'
+    description: 'High-performance cool roof coating with energy savings'
   },
   "Green Roof": {
     co2: 2.1,

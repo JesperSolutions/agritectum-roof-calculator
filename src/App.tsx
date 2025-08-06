@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
-import { Leaf, Zap, Wind, Calendar, TrendingUp, Calculator, Info, Euro, Sun, FileText, ToggleLeft, ToggleRight, Save, FolderOpen, HelpCircle, Undo, Redo, Play, Settings, ChevronRight, ChevronLeft, Lock, Unlock, Mail, Phone, User, MapPin, Home, Award, Wrench } from 'lucide-react';
+import { useState } from 'react';
+import { TrendingUp, ChevronRight, ChevronLeft, Lock, Unlock, MapPin, Home, Award, Wrench, User, Settings, Sun } from 'lucide-react';
 import EnhancedLeadCaptureModal from './components/EnhancedLeadCaptureModal';
 import LocationSelector from './components/LocationSelector';
 import EnhancedCharts from './components/EnhancedCharts';
@@ -8,7 +7,6 @@ import SmartRecommendations from './components/SmartRecommendations';
 import HelpTooltip from './components/HelpTooltip';
 import { UserRole } from './components/UserRoleSelector';
 import { Project, LocationData, ROOF_TYPES } from './types/project';
-import { generateProjectId } from './utils/projectStorage';
 
 // Simplified solar specs with realistic values
 const SOLAR_SPECS = {
@@ -22,9 +20,6 @@ const SOLAR_SPECS = {
   maintenanceCost: 2,
   lifespan: 25 // years
 };
-
-// Conversion factor: 1 m² = 10.764 sq ft
-const M2_TO_SQFT = 10.764;
 
 interface AppState {
   roofSize: number;
@@ -190,13 +185,10 @@ const LocationStep = ({ data, onUpdate, onNext, onBack }: any) => {
 
 const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
   const [roofSize, setRoofSize] = useState(data.roofSize || 1000);
-  const [roofType, setRoofType] = useState(data.roofType || 'Photocatalytic Coating');
+  const [roofType, setRoofType] = useState(data.roofType || 'Standard Roofing');
   const [includeSolar, setIncludeSolar] = useState(data.includeSolar || false);
-  const [useMetric, setUseMetric] = useState(data.useMetric !== false);
 
-  const quickSizes = useMetric 
-    ? [500, 1000, 2000, 5000] 
-    : [5382, 10764, 21528, 53820];
+  const quickSizes = [500, 1000, 2000, 5000];
 
   const handleUpdate = (updates: any) => {
     onUpdate(updates);
@@ -215,26 +207,12 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
       <div className="bg-white rounded-xl border border-gray-200 p-8 mb-8 space-y-8">
         {/* Roof Size Input */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Home className="w-5 h-5 text-blue-600" />
-              <label className="block text-lg font-semibold text-gray-900">
-                Roof Size
-              </label>
-              <HelpTooltip content="Enter the total roof area for accurate calculations" />
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => {
-                  setUseMetric(!useMetric);
-                  handleUpdate({ useMetric: !useMetric });
-                }}
-                className="flex items-center space-x-2 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm"
-              >
-                <span className={useMetric ? 'font-semibold text-blue-600' : 'text-gray-500'}>m²</span>
-                <span className={!useMetric ? 'font-semibold text-blue-600' : 'text-gray-500'}>sq ft</span>
-              </button>
-            </div>
+          <div className="flex items-center space-x-2">
+            <Home className="w-5 h-5 text-blue-600" />
+            <label className="block text-lg font-semibold text-gray-900">
+              Roof Size (m²)
+            </label>
+            <HelpTooltip content="Enter the total roof area for accurate calculations" />
           </div>
           
           <div className="relative">
@@ -247,13 +225,11 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
                 handleUpdate({ roofSize: newSize });
               }}
               className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-lg font-medium pr-16"
-              placeholder={`Enter area in ${useMetric ? 'm²' : 'sq ft'}`}
+              placeholder="Enter area in m²"
               min="1"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-4">
-              <span className="text-gray-500 text-sm font-medium">
-                {useMetric ? 'm²' : 'sq ft'}
-              </span>
+              <span className="text-gray-500 text-sm font-medium">m²</span>
             </div>
           </div>
           
@@ -282,9 +258,9 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
           <div className="flex items-center space-x-2">
             <Award className="w-5 h-5 text-green-600" />
             <label className="block text-lg font-semibold text-gray-900">
-              Sustainable Roof Solution
+              Roof Solution
             </label>
-            <HelpTooltip content="Choose the sustainable roofing technology that best fits your needs" />
+            <HelpTooltip content="Choose the roofing technology that best fits your needs" />
           </div>
           
           <div className="grid grid-cols-1 gap-4">
@@ -385,7 +361,7 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
 
 const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any) => {
   const [showLeadModal, setShowLeadModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'metrics' | 'charts' | 'recommendations' | 'reports'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'charts' | 'recommendations'>('metrics');
 
   const handleLeadCapture = () => {
     setShowLeadModal(true);
@@ -420,13 +396,6 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
       icon: '🧠', 
       locked: !data.hasProvidedContact,
       description: 'Smart suggestions and expert insights'
-    },
-    { 
-      id: 'reports', 
-      label: 'Professional Reports', 
-      icon: '📄', 
-      locked: !data.hasProvidedContact,
-      description: 'Downloadable PDF reports and documentation'
     }
   ];
 
@@ -510,7 +479,7 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
               <div className="bg-white rounded-xl border border-gray-200 p-8 mb-8 shadow-lg">
                 <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center space-x-2">
                   <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                    <Euro className="w-4 h-4 text-white" />
+                    <TrendingUp className="w-4 h-4 text-white" />
                   </div>
                   <span>Your Roof System Impact</span>
                 </h3>
@@ -531,7 +500,7 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
                   </div>
                   <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
                     <div className="text-4xl font-bold text-purple-600 mb-2">
-                      {calculatedMetrics.paybackYears.toFixed(1)}
+                      {calculatedMetrics.paybackYears === 999 ? '∞' : calculatedMetrics.paybackYears.toFixed(1)}
                     </div>
                     <div className="text-sm text-purple-700 font-medium">Payback Period</div>
                     <div className="text-xs text-purple-600 mt-1">Years</div>
@@ -549,7 +518,7 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
               {/* Environmental Benefits */}
               <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl border border-green-200 p-8 mb-8">
                 <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center space-x-2">
-                  <Leaf className="w-6 h-6 text-green-600" />
+                  <div className="w-6 h-6 text-green-600">🌱</div>
                   <span>Environmental Benefits</span>
                 </h3>
                 <div className="grid md:grid-cols-3 gap-6">
@@ -580,7 +549,7 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
           )}
 
           {/* Locked Content Preview */}
-          {(activeTab === 'charts' || activeTab === 'recommendations' || activeTab === 'reports') && !data.hasProvidedContact && (
+          {(activeTab === 'charts' || activeTab === 'recommendations') && !data.hasProvidedContact && (
             <div className="text-center py-16">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl opacity-50 blur-sm"></div>
@@ -589,12 +558,10 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
                   <h3 className="text-2xl font-bold text-gray-900 mb-4">
                     {activeTab === 'charts' && 'Advanced Charts & Analysis'}
                     {activeTab === 'recommendations' && 'AI-Powered Recommendations'}
-                    {activeTab === 'reports' && 'Professional Reports'}
                   </h3>
                   <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
                     {activeTab === 'charts' && 'Unlock detailed 50-year projections, seasonal analysis, and interactive charts showing your roof\'s long-term environmental impact.'}
                     {activeTab === 'recommendations' && 'Get personalized AI recommendations, expert insights, market trends, and connections to certified professionals in your area.'}
-                    {activeTab === 'reports' && 'Generate comprehensive PDF reports, executive summaries, and technical documentation for stakeholders and contractors.'}
                   </p>
                   
                   <button
@@ -613,7 +580,7 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
             <div className="space-y-6">
               <EnhancedCharts 
                 chartData={generateChartData()}
-                roofType={data.roofType || 'Photocatalytic Coating'}
+                roofType={data.roofType || 'Standard Roofing'}
                 includeSolar={data.includeSolar || false}
                 totalCo2PerYear={calculatedMetrics.totalCo2PerYear}
                 totalEnergyPerYear={calculatedMetrics.totalEnergyPerYear}
@@ -627,7 +594,7 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
             <div className="space-y-6">
               <SmartRecommendations
                 roofSize={data.roofSize || 1000}
-                roofType={data.roofType || 'Photocatalytic Coating'}
+                roofType={data.roofType || 'Standard Roofing'}
                 includeSolar={data.includeSolar || false}
                 location={data.location}
                 totalCo2PerYear={calculatedMetrics.totalCo2PerYear}
@@ -637,51 +604,6 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
                   console.log('Applying recommendation:', recommendation);
                 }}
               />
-            </div>
-          )}
-
-          {data.hasProvidedContact && activeTab === 'reports' && (
-            <div className="space-y-6">
-              <div className="text-center py-12">
-                <FileText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Professional Reports</h3>
-                <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-                  Generate comprehensive PDF reports with all your calculations, recommendations, and analysis.
-                  Perfect for sharing with stakeholders, contractors, and decision makers.
-                </p>
-                <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-                  <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
-                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                      <FileText className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Executive Summary</h4>
-                    <p className="text-sm text-gray-600 mb-4">High-level overview perfect for decision makers and stakeholders</p>
-                    <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                      Generate PDF
-                    </button>
-                  </div>
-                  <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
-                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                      <Settings className="w-6 h-6 text-green-600" />
-                    </div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Technical Report</h4>
-                    <p className="text-sm text-gray-600 mb-4">Detailed specifications and technical analysis for contractors</p>
-                    <button className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                      Generate PDF
-                    </button>
-                  </div>
-                  <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
-                    <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                      <TrendingUp className="w-6 h-6 text-purple-600" />
-                    </div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Financial Analysis</h4>
-                    <p className="text-sm text-gray-600 mb-4">ROI calculations, costs, and financial projections</p>
-                    <button className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                      Generate PDF
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -706,7 +628,7 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
           roofSize: data.roofSize || 1000,
           roofSizeDisplay: data.roofSize || 1000,
           unit: 'm²',
-          roofType: data.roofType || 'Photocatalytic Coating',
+          roofType: data.roofType || 'Standard Roofing',
           includeSolar: data.includeSolar || false,
           ...calculatedMetrics,
           location: data.location,
@@ -724,7 +646,7 @@ export default function RoofImpactWizard() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [appState, setAppState] = useState<AppState>({
     roofSize: 1000,
-    roofType: "Photocatalytic Coating",
+    roofType: "Standard Roofing",
     includeSolar: false,
     useMetric: true,
     location: null,

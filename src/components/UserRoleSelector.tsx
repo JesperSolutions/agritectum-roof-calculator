@@ -1,0 +1,1 @@
+export type UserRole = 'esg-expert' | 'roofing-specialist' | 'private-individual' | null;

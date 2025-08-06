@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Brain, Users, Calendar, TrendingUp, MapPin, Sun, CheckCircle, Star, Target, Zap, DollarSign, Award, ChevronRight, Download, Share2, BarChart3, Calculator, Phone, Mail, ExternalLink, FileText } from 'lucide-react';
+import React from 'react';
+import { Brain, Sun, Award, Phone, Mail } from 'lucide-react';
 import { LocationData, ROOF_TYPES } from '../types/project';
 import HelpTooltip from './HelpTooltip';
 
@@ -35,7 +35,6 @@ export default function SmartRecommendations({
         </div>
       </div>
 
-      {/* Simplified Recommendations */}
       <div className="space-y-6">
         {/* Solar Recommendation */}
         {!includeSolar && location && location.solarIrradiance > 1000 && (
@@ -82,30 +81,30 @@ export default function SmartRecommendations({
         )}
 
         {/* Roof Type Upgrade Recommendation */}
-        {roofType === 'Photocatalytic Coating' && (
+        {roofType === 'Standard Roofing' && (
           <div className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-start space-x-4">
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                 <Award className="w-6 h-6 text-blue-600" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Consider Cool Roof Coating</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Upgrade to Cool Roof Coating</h3>
                 <p className="text-gray-600 mb-4">
-                  Cool roof coating offers higher energy savings and CO₂ offset compared to photocatalytic coating, 
+                  Cool roof coating offers significant energy savings and CO₂ offset compared to standard roofing, 
                   especially in warmer climates.
                 </p>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div className="text-center p-3 bg-green-50 rounded-lg">
                     <div className="text-lg font-bold text-green-600">
-                      +{Math.round((ROOF_TYPES['White - Cool Roof Coating'].co2 - ROOF_TYPES['Photocatalytic Coating'].co2) * roofSize)}
+                      {Math.round(ROOF_TYPES['White - Cool Roof Coating'].co2 * roofSize)}
                     </div>
-                    <div className="text-xs text-green-700">Additional CO₂ Offset</div>
+                    <div className="text-xs text-green-700">kg CO₂ Offset/year</div>
                   </div>
                   <div className="text-center p-3 bg-blue-50 rounded-lg">
                     <div className="text-lg font-bold text-blue-600">
                       {Math.round(ROOF_TYPES['White - Cool Roof Coating'].energy * roofSize).toLocaleString()}
                     </div>
-                    <div className="text-xs text-blue-700">kWh Energy Savings</div>
+                    <div className="text-xs text-blue-700">kWh Energy Savings/year</div>
                   </div>
                 </div>
                 <button
