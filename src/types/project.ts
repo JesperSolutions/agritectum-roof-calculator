@@ -32,7 +32,7 @@ export interface LocationData {
 
 export type UserRole = 'esg-expert' | 'roofing-specialist' | 'private-individual' | null;
 
-// Comprehensive roof types with accurate calculations
+// Comprehensive roof types with accurate calculations and realistic pricing
 export const ROOF_TYPES = {
   "Standard Roofing": { 
     co2: 0, 
@@ -60,7 +60,7 @@ export const ROOF_TYPES = {
     installationRate: 500, // Very fast application
     description: 'Photocatalytic coating that reduces air pollution (NOₓ)'
   },
-  "White Cool Roof Coating": { 
+  "White - Cool Roof Coating": { 
     co2: 6.65, 
     nox: 0.02, 
     energy: 8.5,
