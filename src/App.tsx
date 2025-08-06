@@ -24,12 +24,13 @@ const SOLAR_SPECS = {
 interface RoofSegment {
   id: string;
   name: string;
-  size: number;
+  percentage: number;
   roofType: keyof typeof ROOF_TYPES;
   includeSolar: boolean;
 }
 
 interface AppState {
+  totalRoofSize: number;
   roofSegments: RoofSegment[];
   location: LocationData | null;
   userRole: UserRole;
@@ -189,37 +190,34 @@ const LocationStep = ({ data, onUpdate, onNext, onBack }: any) => {
 };
 
 const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
-  const [roofSegments, setRoofSegments] = useState<RoofSegment[]>(
-    data.roofSegments?.length > 0 ? data.roofSegments : [
-      {
-        id: '1',
-        name: 'Main Roof Area',
-        size: 500,
-        roofType: 'Standard Roofing',
-        includeSolar: false
-      }
-    ]
-  );
+  const [totalRoofSize, setTotalRoofSize] = useState(data.totalRoofSize || 1000);
+  const [roofSegments, setRoofSegments] = useState<RoofSegment[]>(data.roofSegments || []);
 
   const addSegment = () => {
+    const usedPercentage = roofSegments.reduce((sum, segment) => sum + segment.percentage, 0);
+    const remainingPercentage = Math.max(0, 100 - usedPercentage);
+    
+    if (remainingPercentage <= 0) {
+      alert('You have already allocated 100% of your roof area. Please adjust existing segments first.');
+      return;
+    }
+    
     const newSegment: RoofSegment = {
       id: Date.now().toString(),
-      name: `Roof Section ${roofSegments.length + 1}`,
-      size: 500,
-      roofType: 'Standard Roofing',
+      name: `Section ${roofSegments.length + 1}`,
+      percentage: Math.min(remainingPercentage, 25),
+      roofType: 'Photocatalytic Coating',
       includeSolar: false
     };
     const newSegments = [...roofSegments, newSegment];
     setRoofSegments(newSegments);
-    onUpdate({ roofSegments: newSegments });
+    onUpdate({ roofSegments: newSegments, totalRoofSize });
   };
 
   const removeSegment = (id: string) => {
-    if (roofSegments.length > 1) {
-      const newSegments = roofSegments.filter(segment => segment.id !== id);
-      setRoofSegments(newSegments);
-      onUpdate({ roofSegments: newSegments });
-    }
+    const newSegments = roofSegments.filter(segment => segment.id !== id);
+    setRoofSegments(newSegments);
+    onUpdate({ roofSegments: newSegments, totalRoofSize });
   };
 
   const updateSegment = (id: string, updates: Partial<RoofSegment>) => {
@@ -227,10 +225,16 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
       segment.id === id ? { ...segment, ...updates } : segment
     );
     setRoofSegments(newSegments);
-    onUpdate({ roofSegments: newSegments });
+    onUpdate({ roofSegments: newSegments, totalRoofSize });
   };
 
-  const totalRoofSize = roofSegments.reduce((sum, segment) => sum + segment.size, 0);
+  const updateTotalRoofSize = (newSize: number) => {
+    setTotalRoofSize(newSize);
+    onUpdate({ roofSegments, totalRoofSize: newSize });
+  };
+
+  const totalPercentage = roofSegments.reduce((sum, segment) => sum + segment.percentage, 0);
+  const remainingPercentage = 100 - totalPercentage;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -238,7 +242,7 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
         <Settings className="w-16 h-16 mx-auto mb-4 text-purple-600" />
         <h2 className="text-3xl font-bold text-gray-900 mb-4">Configure Your Roof System</h2>
         <p className="text-lg text-gray-600">
-          Divide your roof into sections and choose the best solution for each area.
+          Enter your total roof size, then add segments with percentages for different solutions.
         </p>
         <div className="mt-4 flex items-center justify-center space-x-2 text-sm text-gray-500">
           <HelpCircle className="w-4 h-4" />
@@ -247,41 +251,95 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-8 mb-8">
-        {/* Total Roof Size Display - Matching Original Design */}
+        {/* Total Roof Size Input */}
+        <div className="mb-8">
+          <div className="flex items-center space-x-3 mb-4">
+            <h3 className="text-xl font-semibold text-gray-900">Total Roof Size</h3>
+            <HelpTooltip content="Enter the total area of your roof in square meters. You can measure this from architectural plans or estimate based on building dimensions. This will be divided into segments below." />
+          </div>
+          <div className="flex items-center space-x-4">
+            <input
+              type="number"
+              value={totalRoofSize}
+              onChange={(e) => updateTotalRoofSize(parseInt(e.target.value) || 0)}
+              className="w-48 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg font-semibold"
+              min="1"
+              placeholder="1000"
+            />
+            <span className="text-lg text-gray-600">m²</span>
+          </div>
+        </div>
+
+        {/* Total Roof Size Display */}
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-8 mb-8 text-center relative">
           <div className="absolute top-4 right-4">
-            <HelpTooltip content="This shows the total area of all your roof sections combined. Each section can have different roofing solutions and solar configurations." />
+            <HelpTooltip content="This shows your total roof area. Below you can divide this into segments with different roofing solutions and solar configurations." />
           </div>
           <div className="text-5xl font-bold text-gray-900 mb-2">
             {totalRoofSize.toLocaleString()} m²
           </div>
           <div className="text-lg text-gray-600 mb-1">Total Roof Area</div>
           <div className="text-sm text-gray-500">
-            {roofSegments.length} section{roofSegments.length !== 1 ? 's' : ''}
+            {roofSegments.length} segment{roofSegments.length !== 1 ? 's' : ''} • {totalPercentage}% allocated
           </div>
+          {remainingPercentage > 0 && (
+            <div className="text-sm text-orange-600 mt-1">
+              {remainingPercentage}% remaining
+            </div>
+          )}
+          {totalPercentage > 100 && (
+            <div className="text-sm text-red-600 mt-1">
+              ⚠️ Over-allocated by {totalPercentage - 100}%
+            </div>
+          )}
         </div>
+
+        {/* Percentage Allocation Bar */}
+        {roofSegments.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">Roof Allocation</span>
+              <span className="text-sm text-gray-500">{totalPercentage}% of 100%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              {roofSegments.map((segment, index) => {
+                const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500'];
+                return (
+                  <div
+                    key={segment.id}
+                    className={`h-full float-left ${colors[index % colors.length]}`}
+                    style={{ width: `${Math.min(segment.percentage, 100 - roofSegments.slice(0, index).reduce((sum, s) => sum + s.percentage, 0))}%` }}
+                    title={`${segment.name}: ${segment.percentage}%`}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Roof Sections */}
         <div className="space-y-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
-              <h3 className="text-xl font-semibold text-gray-900">Roof Sections</h3>
-              <HelpTooltip content="Divide your roof into logical sections (e.g., main roof, garage, extension). Each section can have different roofing materials and solar configurations for optimal results." />
+              <h3 className="text-xl font-semibold text-gray-900">Roof Segments</h3>
+              <HelpTooltip content="Add segments to allocate percentages of your roof to different solutions. For example: 60% photocatalytic coating, 40% solar panels. Each segment shows its area and impact." />
             </div>
             <button
               onClick={addSegment}
+              disabled={remainingPercentage <= 0}
               className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
             >
               <Plus className="w-4 h-4" />
-              <span>Add Section</span>
+              <span>Add Segment</span>
             </button>
           </div>
 
           {roofSegments.map((segment, index) => {
             const roofData = ROOF_TYPES[segment.roofType];
-            const segmentCost = roofData.totalCost * segment.size + (segment.includeSolar ? 150 * segment.size : 0);
-            const segmentCo2 = Math.round(roofData.co2 * segment.size + (segment.includeSolar ? segment.size * 0.2 * 1100 * 0.75 * 0.4 / 1000 : 0));
-            const segmentEnergy = Math.round(roofData.energy * segment.size + (segment.includeSolar ? segment.size * 0.2 * 1100 * 0.75 / 1000 : 0));
+            const segmentSize = (segment.percentage / 100) * totalRoofSize;
+            const segmentCost = roofData.totalCost * segmentSize + (segment.includeSolar ? 150 * segmentSize : 0);
+            const segmentCo2 = Math.round(roofData.co2 * segmentSize + (segment.includeSolar ? segmentSize * 0.2 * 1100 * 0.75 * 0.4 / 1000 : 0));
+            const segmentEnergy = Math.round(roofData.energy * segmentSize + (segment.includeSolar ? segmentSize * 0.2 * 1100 * 0.75 / 1000 : 0));
 
             return (
               <div key={segment.id} className="border border-gray-200 rounded-xl p-6 space-y-6 hover:shadow-lg transition-shadow duration-200">
@@ -295,41 +353,46 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
                       value={segment.name}
                       onChange={(e) => updateSegment(segment.id, { name: e.target.value })}
                       className="text-xl font-semibold text-gray-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
-                      placeholder="Enter section name..."
+                      placeholder="Enter segment name..."
                     />
+                    <div className="text-sm text-gray-500">
+                      ({Math.round(segmentSize).toLocaleString()} m²)
+                    </div>
                   </div>
-                  {roofSegments.length > 1 && (
-                    <button
-                      onClick={() => removeSegment(segment.id)}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors hover:scale-110"
-                    >
-                      <Minus className="w-5 h-5" />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => removeSegment(segment.id)}
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors hover:scale-110"
+                  >
+                    <Minus className="w-5 h-5" />
+                  </button>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-6">
-                  {/* Area Input */}
+                  {/* Percentage Input */}
                   <div>
                     <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-                      <span>Area (m²)</span>
-                      <HelpTooltip content="Enter the area of this roof section in square meters. You can measure this from architectural plans or estimate based on the building dimensions." />
+                      <span>Percentage (%)</span>
+                      <HelpTooltip content="What percentage of your total roof should this segment cover? All segments should add up to 100% or less." />
                     </label>
                     <input
                       type="number"
-                      value={segment.size}
-                      onChange={(e) => updateSegment(segment.id, { size: parseInt(e.target.value) || 0 })}
+                      value={segment.percentage}
+                      onChange={(e) => updateSegment(segment.id, { percentage: parseInt(e.target.value) || 0 })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg transition-all duration-200"
                       min="1"
-                      placeholder="500"
+                      max="100"
+                      placeholder="25"
                     />
+                    <div className="text-xs text-gray-500 mt-1">
+                      = {Math.round(segmentSize).toLocaleString()} m²
+                    </div>
                   </div>
 
                   {/* Roof Type Selection */}
                   <div>
                     <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
                       <span>Roof Solution</span>
-                      <HelpTooltip content="Choose the roofing solution for this section. Standard Roofing is the baseline with no environmental benefits. Other options provide CO₂ offset, energy savings, and air quality improvements." />
+                      <HelpTooltip content="Choose the roofing solution for this segment. Each option provides different environmental benefits like CO₂ offset, energy savings, and air quality improvements." />
                     </label>
                     <select
                       value={segment.roofType}
@@ -338,13 +401,13 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
                     >
                       {Object.entries(ROOF_TYPES).map(([type, typeData]) => (
                         <option key={type} value={type}>
-                          {type} {typeData.totalCost > 0 ? `(€${typeData.totalCost}/m²)` : '(Baseline)'}
+                          {type} {typeData.totalCost > 0 ? `(€${typeData.totalCost}/m²)` : ''}
                         </option>
                       ))}
                     </select>
-                    {segment.roofType !== 'Standard Roofing' && (
+                    {roofData.description && (
                       <div className="mt-2 text-xs text-gray-600 bg-gray-50 rounded p-2">
-                        <strong>Benefits:</strong> {ROOF_TYPES[segment.roofType].description}
+                        <strong>Benefits:</strong> {roofData.description}
                       </div>
                     )}
                   </div>
@@ -353,7 +416,7 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
                   <div>
                     <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
                       <span>Solar Panels</span>
-                      <HelpTooltip content="Add solar panels to this roof section. Solar panels generate clean electricity, reduce your energy bills, and provide additional CO₂ offset. About 70% of the roof area can be used for solar panels." />
+                      <HelpTooltip content="Add solar panels to this segment. Solar panels generate clean electricity, reduce your energy bills, and provide additional CO₂ offset. About 70% of the segment area can be used for solar panels." />
                     </label>
                     <div className="flex items-center space-x-3 h-12">
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -371,7 +434,7 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
                     </div>
                     {segment.includeSolar && (
                       <div className="mt-2 text-xs text-yellow-700 bg-yellow-50 rounded p-2">
-                        <strong>Solar Area:</strong> ~{Math.round(segment.size * 0.7)} m² usable for panels
+                        <strong>Solar Area:</strong> ~{Math.round(segmentSize * 0.7)} m² usable for panels
                       </div>
                     )}
                   </div>
@@ -413,6 +476,20 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
               </div>
             );
           })}
+
+          {roofSegments.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              <div className="text-6xl mb-4">🏠</div>
+              <h3 className="text-xl font-semibold mb-2">No segments added yet</h3>
+              <p className="text-gray-600 mb-4">Add your first segment to start configuring your roof system</p>
+              <button
+                onClick={addSegment}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Add First Segment
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -426,7 +503,7 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
         </button>
         <button
           onClick={onNext}
-          disabled={totalRoofSize < 1}
+          disabled={totalRoofSize < 1 || roofSegments.length === 0 || totalPercentage > 100}
           className="flex items-center space-x-2 px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <span>View Results</span>
@@ -600,15 +677,21 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
               {/* Roof Segments Breakdown - Matching Original Design */}
               <div className="bg-white rounded-xl border border-gray-200 p-8 mb-8 shadow-lg">
                 <div className="flex items-center space-x-3 mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900">Roof Sections Breakdown</h3>
-                  <HelpTooltip content="Detailed breakdown showing the contribution of each roof section to your total environmental and financial impact." />
+                  <h3 className="text-2xl font-bold text-gray-900">Roof Segments Breakdown</h3>
+                  <HelpTooltip content="Detailed breakdown showing the contribution of each roof segment to your total environmental and financial impact." />
                 </div>
                 <div className="space-y-6">
                   {data.roofSegments?.map((segment: RoofSegment, index: number) => {
                     const segmentData = ROOF_TYPES[segment.roofType];
-                    const segmentCost = segmentData.totalCost * segment.size + (segment.includeSolar ? 150 * segment.size : 0);
-                    const segmentCo2 = Math.round(segmentData.co2 * segment.size + (segment.includeSolar ? segment.size * 0.2 * 1100 * 0.75 * 0.4 / 1000 : 0));
-                    const segmentEnergy = Math.round(segmentData.energy * segment.size + (segment.includeSolar ? segment.size * 0.2 * 1100 * 0.75 / 1000 : 0));
+                    const segmentSize = (segment.percentage / 100) * data.totalRoofSize;
+                    const segmentCost = segmentData.totalCost * segmentSize + (segment.includeSolar ? 150 * segmentSize : 0);
+                    const segmentCo2 = Math.round(segmentData.co2 * segmentSize + (segment.includeSolar ? segmentSize * 0.2 * 1100 * 0.75 * 0.4 / 1000 : 0));
+                    const segmentEnergy = Math.round(segmentData.energy * segmentSize + (segment.includeSolar ? segmentSize * 0.2 * 1100 * 0.75 / 1000 : 0));
+                    
+                    // Skip segments with no benefits (like Standard Roofing without solar)
+                    if (segmentCost === 0 && segmentCo2 === 0 && segmentEnergy === 0) {
+                      return null;
+                    }
                     
                     return (
                       <div key={segment.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow duration-200">
@@ -620,7 +703,7 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
                             <div>
                               <h4 className="text-xl font-bold text-gray-900">{segment.name}</h4>
                               <p className="text-gray-600">
-                                {segment.size.toLocaleString()} m² • {segment.roofType}
+                                {segment.percentage}% ({Math.round(segmentSize).toLocaleString()} m²) • {segment.roofType}
                                 {segment.includeSolar && ' • Solar Panels'}
                               </p>
                             </div>
@@ -651,7 +734,7 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
                         </div>
                       </div>
                     );
-                  })}
+                  }).filter(Boolean)}
                 </div>
               </div>
 
@@ -799,13 +882,21 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
 export default function RoofImpactWizard() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [appState, setAppState] = useState<AppState>({
+    totalRoofSize: 1000,
     roofSegments: [
       {
         id: '1',
-        name: 'Main Roof Area',
-        size: 500,
-        roofType: 'Standard Roofing',
+        name: 'Photocatalytic Coating',
+        percentage: 60,
+        roofType: 'Photocatalytic Coating',
         includeSolar: false
+      },
+      {
+        id: '2',
+        name: 'Solar Panels',
+        percentage: 40,
+        roofType: 'Standard Roofing',
+        includeSolar: true
       }
     ],
     location: null,
@@ -824,7 +915,6 @@ export default function RoofImpactWizard() {
     let totalEnergyPerYear = 0;
     let totalNoxPerYear = 0;
     let totalSolarEnergyPerYear = 0;
-    let totalRoofSize = 0;
     let totalAnnualSavings = 0;
 
     // Location multiplier for solar calculations
@@ -833,13 +923,13 @@ export default function RoofImpactWizard() {
 
     appState.roofSegments.forEach(segment => {
       const roofData = ROOF_TYPES[segment.roofType];
-      totalRoofSize += segment.size;
+      const segmentSize = (segment.percentage / 100) * appState.totalRoofSize;
 
       // Base roof calculations
-      const segmentCo2 = roofData.co2 * segment.size;
-      const segmentNox = roofData.nox * segment.size;
-      const segmentEnergy = roofData.energy * segment.size;
-      const segmentCost = roofData.totalCost * segment.size;
+      const segmentCo2 = roofData.co2 * segmentSize;
+      const segmentNox = roofData.nox * segmentSize;
+      const segmentEnergy = roofData.energy * segmentSize;
+      const segmentCost = roofData.totalCost * segmentSize;
 
       // Solar calculations for this segment
       let segmentSolarEnergy = 0;
@@ -848,7 +938,7 @@ export default function RoofImpactWizard() {
 
       if (segment.includeSolar) {
         // More accurate solar calculation
-        const solarArea = segment.size * 0.7; // 70% of roof area usable for solar
+        const solarArea = segmentSize * 0.7; // 70% of roof area usable for solar
         segmentSolarEnergy = (SOLAR_SPECS.powerPerM2 * solarArea * adjustedSolarHours 
           * SOLAR_SPECS.daysPerYear * SOLAR_SPECS.performanceFactor) / 1000;
         segmentSolarCo2 = segmentSolarEnergy * SOLAR_SPECS.co2PerKwh;
@@ -874,21 +964,22 @@ export default function RoofImpactWizard() {
       : 999;
 
     // Carbon neutral calculation
-    const initialCo2 = 19 * totalRoofSize; // Manufacturing footprint
+    const initialCo2 = 19 * appState.totalRoofSize; // Manufacturing footprint
     const neutralYear = totalCo2PerYear > 0 ? Math.ceil(initialCo2 / totalCo2PerYear) : null;
 
     // Installation time calculation
     let totalInstallationHours = 0;
     appState.roofSegments.forEach(segment => {
       const roofData = ROOF_TYPES[segment.roofType];
-      const roofHours = roofData.installationRate > 0 ? segment.size / roofData.installationRate : 0;
-      const solarHours = segment.includeSolar ? (segment.size * 0.7) / 20 : 0; // 20 m²/hour for solar
+      const segmentSize = (segment.percentage / 100) * appState.totalRoofSize;
+      const roofHours = roofData.installationRate > 0 ? segmentSize / roofData.installationRate : 0;
+      const solarHours = segment.includeSolar ? (segmentSize * 0.7) / 20 : 0; // 20 m²/hour for solar
       totalInstallationHours += roofHours + solarHours;
     });
     const installationDays = Math.ceil(totalInstallationHours / 8);
 
     return {
-      totalRoofSize,
+      totalRoofSize: appState.totalRoofSize,
       totalInstallationCost: Math.round(totalInstallationCost),
       totalCo2PerYear: Math.round(totalCo2PerYear),
       totalEnergyPerYear: Math.round(totalEnergyPerYear),
@@ -898,7 +989,7 @@ export default function RoofImpactWizard() {
       paybackYears: Math.round(paybackYears * 10) / 10,
       neutralYear,
       installationDays: Math.max(1, installationDays),
-      maintenanceCost: Math.round(totalRoofSize * 2)
+      maintenanceCost: Math.round(appState.totalRoofSize * 2)
     };
   };
 
@@ -924,7 +1015,10 @@ export default function RoofImpactWizard() {
       title: 'Roof Configuration',
       description: 'Configure your roof system',
       component: RoofConfigurationStep,
-      isComplete: (data: AppState) => data.roofSegments.length > 0 && data.roofSegments.every(s => s.size > 0)
+      isComplete: (data: AppState) => {
+        const totalPercentage = data.roofSegments.reduce((sum, s) => sum + s.percentage, 0);
+        return data.totalRoofSize > 0 && data.roofSegments.length > 0 && totalPercentage <= 100;
+      }
     },
     {
       id: 'metrics',

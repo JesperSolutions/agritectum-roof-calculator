@@ -46,8 +46,8 @@ export default function SmartRecommendations({
 
   const solarPotential = calculateSolarPotential();
 
-  // Check if user has standard roofing (baseline)
-  const hasStandardRoofing = roofType === 'Standard Roofing' || totalCo2PerYear === 0;
+  // Check if user could benefit from more solar
+  const hasLimitedSolar = !includeSolar || totalEnergyPerYear < (roofSize * 5); // Less than 5 kWh per m²
 
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
@@ -61,7 +61,7 @@ export default function SmartRecommendations({
 
       <div className="space-y-8">
         {/* Solar Recommendation */}
-        {!includeSolar && location && location.solarIrradiance > 1000 && solarPotential && (
+        {hasLimitedSolar && location && location.solarIrradiance > 1000 && solarPotential && (
           <div className="border-2 border-yellow-200 rounded-2xl p-8 bg-gradient-to-r from-yellow-50 to-orange-50 hover:shadow-xl transition-all duration-300">
             <div className="flex items-start space-x-6">
               <div className="w-16 h-16 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
@@ -69,14 +69,14 @@ export default function SmartRecommendations({
               </div>
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-4">
-                  <h3 className="text-2xl font-bold text-gray-900">Add Solar Panels</h3>
+                  <h3 className="text-2xl font-bold text-gray-900">{includeSolar ? 'Expand Solar Coverage' : 'Add Solar Panels'}</h3>
                   <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
                     95% Confidence
                   </div>
                 </div>
                 <p className="text-lg text-gray-700 mb-6 leading-relaxed">
                   Your location has excellent solar potential with {location.solarIrradiance} kWh/m²/year irradiance. 
-                  Adding solar panels could transform your roof into a clean energy generator.
+                  {includeSolar ? 'Expanding your solar coverage' : 'Adding solar panels'} could significantly increase your energy generation and savings.
                 </p>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
@@ -108,10 +108,10 @@ export default function SmartRecommendations({
 
                 <div className="flex items-center space-x-4">
                   <button
-                    onClick={() => onRecommendationApply({ type: 'add_solar', data: { includeSolar: true } })}
+                    onClick={() => onRecommendationApply({ type: includeSolar ? 'expand_solar' : 'add_solar', data: { includeSolar: true } })}
                     className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-8 py-3 rounded-xl hover:from-yellow-600 hover:to-orange-600 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                   >
-                    Add Solar Panels
+                    {includeSolar ? 'Expand Solar Coverage' : 'Add Solar Panels'}
                   </button>
                   <div className="text-sm text-gray-600">
                     Investment: €{solarPotential.installationCost.toLocaleString()}
@@ -122,8 +122,8 @@ export default function SmartRecommendations({
           </div>
         )}
 
-        {/* Roof Type Upgrade Recommendation */}
-        {hasStandardRoofing && (
+        {/* Roof Optimization Recommendation */}
+        {totalCo2PerYear < (roofSize * 2) && ( // Less than 2 kg CO₂ per m²
           <div className="border-2 border-blue-200 rounded-2xl p-8 bg-gradient-to-r from-blue-50 to-indigo-50 hover:shadow-xl transition-all duration-300">
             <div className="flex items-start space-x-6">
               <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg">
@@ -131,14 +131,14 @@ export default function SmartRecommendations({
               </div>
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-4">
-                  <h3 className="text-2xl font-bold text-gray-900">Upgrade to Cool Roof Coating</h3>
+                  <h3 className="text-2xl font-bold text-gray-900">Optimize Roof Coverage</h3>
                   <div className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
                     Recommended
                   </div>
                 </div>
                 <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-                  Cool roof coating offers significant energy savings and CO₂ offset compared to standard roofing. 
-                  It's especially effective in warmer climates and provides excellent return on investment.
+                  Your current configuration has room for improvement. Consider allocating more roof area to high-impact solutions 
+                  like cool roof coating or green roof systems for better environmental benefits.
                 </p>
                 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-6">
@@ -163,10 +163,10 @@ export default function SmartRecommendations({
                 </div>
 
                 <button
-                  onClick={() => onRecommendationApply({ type: 'change_roof_type', data: { roofType: 'White - Cool Roof Coating' } })}
+                  onClick={() => onRecommendationApply({ type: 'optimize_coverage', data: { roofType: 'White - Cool Roof Coating' } })}
                   className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-8 py-3 rounded-xl hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                 >
-                  Upgrade to Cool Roof
+                  Optimize Coverage
                 </button>
               </div>
             </div>
