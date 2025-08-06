@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TrendingUp, ChevronRight, ChevronLeft, Lock, Unlock, MapPin, Home, Award, Wrench, User, Settings, Sun, Plus, Minus, BarChart3, Brain } from 'lucide-react';
+import { TrendingUp, ChevronRight, ChevronLeft, Lock, Unlock, MapPin, Home, Award, Wrench, User, Settings, Sun, Plus, Minus, BarChart3, Brain, HelpCircle, Calculator, Zap, Leaf, Euro, Clock, TreePine } from 'lucide-react';
 import EnhancedLeadCaptureModal from './components/EnhancedLeadCaptureModal';
 import LocationSelector from './components/LocationSelector';
 import EnhancedCharts from './components/EnhancedCharts';
@@ -240,11 +240,18 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
         <p className="text-lg text-gray-600">
           Divide your roof into sections and choose the best solution for each area.
         </p>
+        <div className="mt-4 flex items-center justify-center space-x-2 text-sm text-gray-500">
+          <HelpCircle className="w-4 h-4" />
+          <span>Hover over the question marks for helpful explanations</span>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-8 mb-8">
         {/* Total Roof Size Display - Matching Original Design */}
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-8 mb-8 text-center">
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-8 mb-8 text-center relative">
+          <div className="absolute top-4 right-4">
+            <HelpTooltip content="This shows the total area of all your roof sections combined. Each section can have different roofing solutions and solar configurations." />
+          </div>
           <div className="text-5xl font-bold text-gray-900 mb-2">
             {totalRoofSize.toLocaleString()} m²
           </div>
@@ -256,11 +263,14 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
 
         {/* Roof Sections */}
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold text-gray-900">Roof Sections</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <h3 className="text-xl font-semibold text-gray-900">Roof Sections</h3>
+              <HelpTooltip content="Divide your roof into logical sections (e.g., main roof, garage, extension). Each section can have different roofing materials and solar configurations for optimal results." />
+            </div>
             <button
               onClick={addSegment}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
             >
               <Plus className="w-4 h-4" />
               <span>Add Section</span>
@@ -274,23 +284,24 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
             const segmentEnergy = Math.round(roofData.energy * segment.size + (segment.includeSolar ? segment.size * 0.2 * 1100 * 0.75 / 1000 : 0));
 
             return (
-              <div key={segment.id} className="border border-gray-200 rounded-xl p-6 space-y-6">
+              <div key={segment.id} className="border border-gray-200 rounded-xl p-6 space-y-6 hover:shadow-lg transition-shadow duration-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-lg font-bold text-blue-600">{index + 1}</span>
+                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-md">
+                      <span className="text-lg font-bold text-white">{index + 1}</span>
                     </div>
                     <input
                       type="text"
                       value={segment.name}
                       onChange={(e) => updateSegment(segment.id, { name: e.target.value })}
-                      className="text-xl font-semibold text-gray-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2"
+                      className="text-xl font-semibold text-gray-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
+                      placeholder="Enter section name..."
                     />
                   </div>
                   {roofSegments.length > 1 && (
                     <button
                       onClick={() => removeSegment(segment.id)}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors hover:scale-110"
                     >
                       <Minus className="w-5 h-5" />
                     </button>
@@ -300,27 +311,30 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
                 <div className="grid md:grid-cols-3 gap-6">
                   {/* Area Input */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Area (m²)
+                    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
+                      <span>Area (m²)</span>
+                      <HelpTooltip content="Enter the area of this roof section in square meters. You can measure this from architectural plans or estimate based on the building dimensions." />
                     </label>
                     <input
                       type="number"
                       value={segment.size}
                       onChange={(e) => updateSegment(segment.id, { size: parseInt(e.target.value) || 0 })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg transition-all duration-200"
                       min="1"
+                      placeholder="500"
                     />
                   </div>
 
                   {/* Roof Type Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Roof Solution
+                    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
+                      <span>Roof Solution</span>
+                      <HelpTooltip content="Choose the roofing solution for this section. Standard Roofing is the baseline with no environmental benefits. Other options provide CO₂ offset, energy savings, and air quality improvements." />
                     </label>
                     <select
                       value={segment.roofType}
                       onChange={(e) => updateSegment(segment.id, { roofType: e.target.value as keyof typeof ROOF_TYPES })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg transition-all duration-200"
                     >
                       {Object.entries(ROOF_TYPES).map(([type, typeData]) => (
                         <option key={type} value={type}>
@@ -328,12 +342,18 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
                         </option>
                       ))}
                     </select>
+                    {segment.roofType !== 'Standard Roofing' && (
+                      <div className="mt-2 text-xs text-gray-600 bg-gray-50 rounded p-2">
+                        <strong>Benefits:</strong> {ROOF_TYPES[segment.roofType].description}
+                      </div>
+                    )}
                   </div>
 
                   {/* Solar Toggle */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Solar Panels
+                    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
+                      <span>Solar Panels</span>
+                      <HelpTooltip content="Add solar panels to this roof section. Solar panels generate clean electricity, reduce your energy bills, and provide additional CO₂ offset. About 70% of the roof area can be used for solar panels." />
                     </label>
                     <div className="flex items-center space-x-3 h-12">
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -345,35 +365,44 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
                         />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
                       </label>
-                      <span className="text-sm text-gray-600 font-medium">
-                        {segment.includeSolar ? 'Included' : 'Not included'}
+                      <span className={`text-sm font-medium ${segment.includeSolar ? 'text-yellow-600' : 'text-gray-600'}`}>
+                        {segment.includeSolar ? '☀️ Included' : 'Not included'}
                       </span>
                     </div>
+                    {segment.includeSolar && (
+                      <div className="mt-2 text-xs text-yellow-700 bg-yellow-50 rounded p-2">
+                        <strong>Solar Area:</strong> ~{Math.round(segment.size * 0.7)} m² usable for panels
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Segment Metrics - Matching Original Design */}
-                <div className="bg-gray-50 rounded-xl p-6">
+                <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6 border border-gray-100">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                    <div>
+                    <div className="flex flex-col items-center">
+                      <Euro className="w-6 h-6 text-gray-600 mb-2" />
                       <div className="text-2xl font-bold text-gray-900 mb-1">
                         €{segmentCost.toLocaleString()}
                       </div>
                       <div className="text-sm text-gray-600">Total Cost</div>
                     </div>
-                    <div>
+                    <div className="flex flex-col items-center">
+                      <Leaf className="w-6 h-6 text-green-600 mb-2" />
                       <div className="text-2xl font-bold text-green-600 mb-1">
                         {segmentCo2}
                       </div>
                       <div className="text-sm text-gray-600">kg CO₂/year</div>
                     </div>
-                    <div>
+                    <div className="flex flex-col items-center">
+                      <Zap className="w-6 h-6 text-blue-600 mb-2" />
                       <div className="text-2xl font-bold text-blue-600 mb-1">
                         {segmentEnergy.toLocaleString()}
                       </div>
                       <div className="text-sm text-gray-600">kWh/year</div>
                     </div>
-                    <div>
+                    <div className="flex flex-col items-center">
+                      <Clock className="w-6 h-6 text-purple-600 mb-2" />
                       <div className="text-2xl font-bold text-purple-600 mb-1">
                         {roofData.lifespan}
                       </div>
@@ -526,28 +555,40 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
             <div>
               {/* Key Financial Metrics - Enhanced Design */}
               <div className="grid md:grid-cols-4 gap-6 mb-8">
-                <div className="text-center p-8 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl border border-green-200 shadow-lg">
+                <div className="text-center p-8 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl border border-green-200 shadow-lg relative">
+                  <div className="absolute top-3 right-3">
+                    <HelpTooltip content="Total upfront investment including all roofing materials, solar panels, and installation costs. This is a one-time expense." iconColor="text-green-500" />
+                  </div>
                   <div className="text-5xl font-bold text-green-600 mb-3">
                     €{calculatedMetrics.totalInstallationCost.toLocaleString()}
                   </div>
                   <div className="text-lg text-green-700 font-semibold">Total Investment</div>
                   <div className="text-sm text-green-600 mt-1">One-time cost</div>
                 </div>
-                <div className="text-center p-8 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border border-blue-200 shadow-lg">
+                <div className="text-center p-8 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border border-blue-200 shadow-lg relative">
+                  <div className="absolute top-3 right-3">
+                    <HelpTooltip content="Annual savings from reduced energy bills and solar energy generation. This includes both energy efficiency improvements and solar electricity production." iconColor="text-blue-500" />
+                  </div>
                   <div className="text-5xl font-bold text-blue-600 mb-3">
                     €{calculatedMetrics.totalAnnualSavings.toLocaleString()}
                   </div>
                   <div className="text-lg text-blue-700 font-semibold">Annual Savings</div>
                   <div className="text-sm text-blue-600 mt-1">Per year</div>
                 </div>
-                <div className="text-center p-8 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl border border-purple-200 shadow-lg">
+                <div className="text-center p-8 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl border border-purple-200 shadow-lg relative">
+                  <div className="absolute top-3 right-3">
+                    <HelpTooltip content="Time it takes for annual savings to equal the initial investment. ∞ means no financial payback (environmental benefits only)." iconColor="text-purple-500" />
+                  </div>
                   <div className="text-5xl font-bold text-purple-600 mb-3">
                     {calculatedMetrics.paybackYears === 999 ? '∞' : calculatedMetrics.paybackYears.toFixed(1)}
                   </div>
                   <div className="text-lg text-purple-700 font-semibold">Payback Period</div>
                   <div className="text-sm text-purple-600 mt-1">Years</div>
                 </div>
-                <div className="text-center p-8 bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl border border-orange-200 shadow-lg">
+                <div className="text-center p-8 bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl border border-orange-200 shadow-lg relative">
+                  <div className="absolute top-3 right-3">
+                    <HelpTooltip content="Amount of CO₂ emissions offset annually through your roof system. This includes benefits from roofing materials and solar energy generation." iconColor="text-orange-500" />
+                  </div>
                   <div className="text-5xl font-bold text-orange-600 mb-3">
                     {calculatedMetrics.totalCo2PerYear.toLocaleString()}
                   </div>
@@ -558,7 +599,10 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
 
               {/* Roof Segments Breakdown - Matching Original Design */}
               <div className="bg-white rounded-xl border border-gray-200 p-8 mb-8 shadow-lg">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6">Roof Sections Breakdown</h3>
+                <div className="flex items-center space-x-3 mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900">Roof Sections Breakdown</h3>
+                  <HelpTooltip content="Detailed breakdown showing the contribution of each roof section to your total environmental and financial impact." />
+                </div>
                 <div className="space-y-6">
                   {data.roofSegments?.map((segment: RoofSegment, index: number) => {
                     const segmentData = ROOF_TYPES[segment.roofType];
@@ -567,11 +611,11 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
                     const segmentEnergy = Math.round(segmentData.energy * segment.size + (segment.includeSolar ? segment.size * 0.2 * 1100 * 0.75 / 1000 : 0));
                     
                     return (
-                      <div key={segment.id} className="border border-gray-200 rounded-xl p-6">
+                      <div key={segment.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow duration-200">
                         <div className="flex items-center justify-between mb-6">
                           <div className="flex items-center space-x-4">
-                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                              <span className="text-lg font-bold text-blue-600">{index + 1}</span>
+                            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-md">
+                              <span className="text-lg font-bold text-white">{index + 1}</span>
                             </div>
                             <div>
                               <h4 className="text-xl font-bold text-gray-900">{segment.name}</h4>
@@ -584,19 +628,23 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
                         </div>
                         
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                          <div className="text-center p-4 bg-gray-50 rounded-xl">
+                          <div className="text-center p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                            <Euro className="w-5 h-5 text-gray-600 mx-auto mb-2" />
                             <div className="text-2xl font-bold text-gray-900 mb-1">€{segmentCost.toLocaleString()}</div>
                             <div className="text-sm text-gray-600">Total Cost</div>
                           </div>
-                          <div className="text-center p-4 bg-green-50 rounded-xl">
+                          <div className="text-center p-4 bg-green-50 rounded-xl hover:bg-green-100 transition-colors">
+                            <Leaf className="w-5 h-5 text-green-600 mx-auto mb-2" />
                             <div className="text-2xl font-bold text-green-600 mb-1">{segmentCo2}</div>
                             <div className="text-sm text-green-700">kg CO₂/year</div>
                           </div>
-                          <div className="text-center p-4 bg-blue-50 rounded-xl">
+                          <div className="text-center p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors">
+                            <Zap className="w-5 h-5 text-blue-600 mx-auto mb-2" />
                             <div className="text-2xl font-bold text-blue-600 mb-1">{segmentEnergy.toLocaleString()}</div>
                             <div className="text-sm text-blue-700">kWh/year</div>
                           </div>
-                          <div className="text-center p-4 bg-purple-50 rounded-xl">
+                          <div className="text-center p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors">
+                            <Clock className="w-5 h-5 text-purple-600 mx-auto mb-2" />
                             <div className="text-2xl font-bold text-purple-600 mb-1">{segmentData.lifespan}</div>
                             <div className="text-sm text-purple-700">Years Lifespan</div>
                           </div>
@@ -609,31 +657,39 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
 
               {/* Environmental Benefits */}
               <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl border border-green-200 p-8 mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center space-x-3">
-                  <div className="w-8 h-8 text-green-600">🌱</div>
-                  <span>Environmental Benefits</span>
-                </h3>
+                <div className="flex items-center space-x-3 mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900 flex items-center space-x-3">
+                    <div className="w-8 h-8 text-green-600">🌱</div>
+                    <span>Environmental Benefits</span>
+                  </h3>
+                  <HelpTooltip content="Environmental impact of your roof system expressed in relatable terms. These benefits accumulate year after year." />
+                </div>
                 <div className="grid md:grid-cols-3 gap-8">
                   <div className="text-center">
-                    <div className="text-6xl mb-4">🌳</div>
+                    <TreePine className="w-16 h-16 text-green-600 mx-auto mb-4" />
                     <div className="text-4xl font-bold text-green-600 mb-2">
                       {Math.round(calculatedMetrics.totalCo2PerYear / 22)}
                     </div>
                     <div className="text-lg text-gray-700 font-medium">Trees equivalent per year</div>
+                    <div className="text-sm text-gray-500 mt-1">CO₂ absorption equivalent</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-6xl mb-4">⚡</div>
+                    <Zap className="w-16 h-16 text-blue-600 mx-auto mb-4" />
                     <div className="text-4xl font-bold text-blue-600 mb-2">
                       {calculatedMetrics.totalEnergyPerYear.toLocaleString()}
                     </div>
                     <div className="text-lg text-gray-700 font-medium">kWh energy impact per year</div>
+                    <div className="text-sm text-gray-500 mt-1">Savings + generation combined</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-6xl mb-4">🌬️</div>
+                    <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl">🌬️</span>
+                    </div>
                     <div className="text-4xl font-bold text-purple-600 mb-2">
                       {calculatedMetrics.totalNoxPerYear.toFixed(1)}
                     </div>
                     <div className="text-lg text-gray-700 font-medium">kg NOₓ reduction per year</div>
+                    <div className="text-sm text-gray-500 mt-1">Air quality improvement</div>
                   </div>
                 </div>
               </div>
@@ -655,6 +711,12 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
                     {activeTab === 'charts' && 'Unlock detailed 50-year projections, seasonal analysis, and interactive charts showing your roof\'s long-term environmental impact.'}
                     {activeTab === 'recommendations' && 'Get personalized AI recommendations, expert insights, market trends, and connections to certified professionals in your area.'}
                   </p>
+                  <div className="bg-blue-50 rounded-lg p-4 mb-6 max-w-md mx-auto">
+                    <div className="flex items-center space-x-2 text-sm text-blue-800">
+                      <HelpCircle className="w-4 h-4" />
+                      <span>Provide your contact details to unlock advanced features and receive a detailed analysis report</span>
+                    </div>
+                  </div>
                   
                   <button
                     onClick={handleLeadCapture}

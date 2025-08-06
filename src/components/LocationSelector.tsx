@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapPin, Search, Loader2, Globe } from 'lucide-react';
 import { LocationData } from '../types/project';
 import { getLocationData, searchLocation } from '../utils/locationUtils';
+import HelpTooltip from './HelpTooltip';
 
 interface LocationSelectorProps {
   location: LocationData | null;
@@ -94,7 +95,10 @@ export default function LocationSelector({ location, onLocationChange }: Locatio
     <div className="space-y-4">
       <div className="flex items-center space-x-3 mb-4">
         <Globe className="w-5 h-5 text-blue-600" />
-        <h3 className="text-lg font-semibold text-gray-900">Location-Based Optimization</h3>
+        <div className="flex items-center space-x-2">
+          <h3 className="text-lg font-semibold text-gray-900">Location-Based Optimization</h3>
+          <HelpTooltip content="Your location affects solar irradiance, climate conditions, and energy calculations. We use this data to provide accurate environmental and financial projections for your specific area." />
+        </div>
       </div>
       
       <div className="relative">
