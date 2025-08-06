@@ -32,7 +32,7 @@ export interface LocationData {
   };
 }
 
-// Define ROOF_TYPES here to avoid circular dependency
+// Roof types with corrected calculations
 export const ROOF_TYPES = {
   "Photocatalytic Coating": { 
     co2: 1.94, 

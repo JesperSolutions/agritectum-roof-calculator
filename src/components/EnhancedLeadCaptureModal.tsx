@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Send, CheckCircle, Mail, Download, FileText } from 'lucide-react';
 import emailjs from '@emailjs/browser';
-import EmailNotificationGenerator from './EmailNotificationGenerator';
-import { createEmailNotificationData, generateCalculationId, getBrowserInfo } from '../utils/emailNotificationUtils';
-import type { EmailNotificationData } from '../utils/emailNotificationUtils';
 
 interface EnhancedLeadCaptureModalProps {
   isOpen: boolean;
@@ -58,14 +55,6 @@ const EMAILJS_SERVICE_ID = 'service_labcoh9';
 const EMAILJS_TEMPLATE_ID = 'template_pac9jom';
 const EMAILJS_PUBLIC_KEY = 'BCoUz6Ty8c0oza6pZ';
 
-// Test EmailJS configuration
-const testEmailJSConfig = () => {
-  console.log('EmailJS Configuration:');
-  console.log('Service ID:', EMAILJS_SERVICE_ID);
-  console.log('Template ID:', EMAILJS_TEMPLATE_ID);
-  console.log('Public Key:', EMAILJS_PUBLIC_KEY);
-};
-
 export default function EnhancedLeadCaptureModal({ 
   isOpen, 
   onClose, 
@@ -74,7 +63,7 @@ export default function EnhancedLeadCaptureModal({
   userRole,
   sessionStartTime 
 }: EnhancedLeadCaptureModalProps) {
-  const [currentStep, setCurrentStep] = useState<'form' | 'email' | 'success'>('form');
+  const [currentStep, setCurrentStep] = useState<'form' | 'success'>('form');
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
@@ -99,55 +88,6 @@ export default function EnhancedLeadCaptureModal({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [emailNotificationData, setEmailNotificationData] = useState<EmailNotificationData | null>(null);
-
-  useEffect(() => {
-    if (currentStep === 'email' && formData.name && formData.email) {
-      generateEmailNotificationData();
-    }
-  }, [currentStep, formData]);
-
-  const generateEmailNotificationData = () => {
-    const emailData = createEmailNotificationData(
-      {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        company: formData.companyName,
-        role: formData.role,
-        userRole: userRole as any
-      },
-      {
-        roofSize: calculatorData.roofSize,
-        roofSizeDisplay: calculatorData.roofSizeDisplay,
-        unit: calculatorData.unit,
-        roofType: calculatorData.roofType,
-        includeSolar: calculatorData.includeSolar,
-        location: calculatorData.location || null,
-        useMetric: calculatorData.useMetric || true
-      },
-      {
-        totalCo2PerYear: calculatorData.totalCo2PerYear,
-        totalEnergyPerYear: calculatorData.totalEnergyPerYear,
-        noxPerYear: calculatorData.noxPerYear,
-        neutralYear: calculatorData.neutralYear,
-        totalInstallationCost: calculatorData.totalInstallationCost,
-        solarEnergyPerYear: calculatorData.solarEnergyPerYear,
-        installationDays: calculatorData.installationDays,
-        annualSavings: calculatorData.annualSavings,
-        paybackYears: calculatorData.paybackYears,
-        maintenanceCost: calculatorData.maintenanceCost
-      },
-      {
-        specialRequirements: formData.specialRequirements.filter(req => req.trim()),
-        additionalServices: formData.additionalServices.filter(service => service.trim()),
-        notes: formData.notes.trim() || undefined
-      },
-      sessionStartTime
-    );
-
-    setEmailNotificationData(emailData);
-  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -180,9 +120,6 @@ export default function EnhancedLeadCaptureModal({
     setIsSubmitting(true);
 
     try {
-      // Test configuration
-      testEmailJSConfig();
-      
       // Prepare email template parameters
       const templateParams = {
         to_email: 'info@agritectum.com',
@@ -224,16 +161,6 @@ export default function EnhancedLeadCaptureModal({
         submission_time: new Date().toLocaleTimeString()
       };
 
-      console.log('Sending email with parameters:', {
-        serviceId: EMAILJS_SERVICE_ID,
-        templateId: EMAILJS_TEMPLATE_ID,
-        publicKey: EMAILJS_PUBLIC_KEY,
-        templateParams: {
-          ...templateParams,
-          // Don't log sensitive data, just structure
-        }
-      });
-
       await emailjs.send(
         EMAILJS_SERVICE_ID,
         EMAILJS_TEMPLATE_ID,
@@ -241,58 +168,47 @@ export default function EnhancedLeadCaptureModal({
         EMAILJS_PUBLIC_KEY
       );
       
-      console.log('Email sent successfully!');
+      setCurrentStep('success');
       
-      // Generate email notification data
-      generateEmailNotificationData();
-      
-      // Move to email step
-      setCurrentStep('email');
+      // Auto-close after 3 seconds and trigger callback
+      setTimeout(() => {
+        onClose();
+        setCurrentStep('form');
+        // Reset form data
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          companyName: '',
+          role: '',
+          address: '',
+          roofType: '',
+          roofAge: '',
+          roofArea: calculatorData.roofSizeDisplay,
+          roofAreaUnit: calculatorData.unit,
+          roofDivision: calculatorData.roofType,
+          timeline: '',
+          budget: '',
+          goals: [],
+          specialRequirements: [],
+          additionalServices: [],
+          notes: '',
+          acceptPrivacy: false,
+          acceptNewsletter: false
+        });
+        
+        // Call the callback after closing
+        if (onLeadCaptured) {
+          onLeadCaptured();
+        }
+      }, 3000);
       
     } catch (error) {
-      console.error('EmailJS Error Details:', error);
       console.error('Error submitting form:', error);
       setErrors({ submit: 'There was an error submitting your request. Please try again or contact us directly.' });
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleEmailSent = () => {
-    setCurrentStep('success');
-    
-    // Auto-close after 2 seconds and trigger callback
-    setTimeout(() => {
-      onClose();
-      setCurrentStep('form');
-      // Reset form data
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        companyName: '',
-        role: '',
-        address: '',
-        roofType: '',
-        roofAge: '',
-        roofArea: calculatorData.roofSizeDisplay,
-        roofAreaUnit: calculatorData.unit,
-        roofDivision: calculatorData.roofType,
-        timeline: '',
-        budget: '',
-        goals: [],
-        specialRequirements: [],
-        additionalServices: [],
-        notes: '',
-        acceptPrivacy: false,
-        acceptNewsletter: false
-      });
-      
-      // Call the callback after closing
-      if (onLeadCaptured) {
-        onLeadCaptured();
-      }
-    }, 2000);
   };
 
   const addSpecialRequirement = () => {
@@ -324,9 +240,7 @@ export default function EnhancedLeadCaptureModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">
-            {currentStep === 'form' && 'Get Your Personal Roof Assessment'}
-            {currentStep === 'email' && 'Email Notification'}
-            {currentStep === 'success' && 'Thank You!'}
+            {currentStep === 'form' ? 'Get Your Personal Roof Assessment' : 'Thank You!'}
           </h2>
           <button
             onClick={onClose}
@@ -343,38 +257,8 @@ export default function EnhancedLeadCaptureModal({
               <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Thank You!</h3>
               <p className="text-gray-600">
-                We've received your request and sent you a detailed email with your calculation results. 
-                We'll get back to you shortly with a personal evaluation.
+                We've received your request and will get back to you shortly with a personal evaluation.
               </p>
-            </div>
-          </div>
-        )}
-
-        {/* Email Notification Step */}
-        {currentStep === 'email' && emailNotificationData && (
-          <div className="p-6">
-            <EmailNotificationGenerator
-              data={emailNotificationData}
-              onSendEmail={handleEmailSent}
-              onDownloadPDF={() => {
-                // Implement PDF generation if needed
-                console.log('PDF download requested');
-              }}
-            />
-            
-            <div className="flex justify-between mt-6">
-              <button
-                onClick={() => setCurrentStep('form')}
-                className="px-6 py-3 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Back to Form
-              </button>
-              <button
-                onClick={handleEmailSent}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                Continue
-              </button>
             </div>
           </div>
         )}
