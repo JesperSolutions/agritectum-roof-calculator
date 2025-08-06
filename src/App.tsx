@@ -243,6 +243,7 @@ const RoofDesignStep = ({ data, onUpdate, onNext, onBack }: any) => {
 
 const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any) => {
   const [showLeadModal, setShowLeadModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'metrics' | 'charts' | 'recommendations' | 'reports'>('metrics');
 
   const handleLeadCapture = () => {
     setShowLeadModal(true);
@@ -252,6 +253,38 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
     onUpdate({ hasProvidedContact: true });
     setShowLeadModal(false);
   };
+
+  // Tab configuration with lock status
+  const tabs = [
+    { 
+      id: 'metrics', 
+      label: 'Environmental Impact', 
+      icon: '🌱', 
+      locked: false,
+      description: 'Your environmental impact overview'
+    },
+    { 
+      id: 'charts', 
+      label: 'Advanced Analysis', 
+      icon: '📊', 
+      locked: !data.hasProvidedContact,
+      description: '50-year projections and detailed charts'
+    },
+    { 
+      id: 'recommendations', 
+      label: 'AI Recommendations', 
+      icon: '🧠', 
+      locked: !data.hasProvidedContact,
+      description: 'Smart suggestions and expert insights'
+    },
+    { 
+      id: 'reports', 
+      label: 'Professional Reports', 
+      icon: '📄', 
+      locked: !data.hasProvidedContact,
+      description: 'Downloadable PDF reports and documentation'
+    }
+  ];
 
   // Create the environmental impact profile data similar to the image
   const environmentalProfile = {
@@ -297,158 +330,297 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
   return (
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
-        <TrendingUp className="w-16 h-16 mx-auto mb-4 text-green-600" />
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">Your Environmental Impact</h2>
+        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+          <TrendingUp className="w-8 h-8 text-white" />
+        </div>
+        <h2 className="text-3xl font-bold text-gray-900 mb-4">Your Roof System Analysis</h2>
         <p className="text-lg text-gray-600">
-          Here's what your sustainable roof system will achieve for the environment.
+          Comprehensive analysis of your custom roof design and its environmental impact.
         </p>
       </div>
 
-      {/* Environmental Impact Profile - Similar to the image */}
-      <div className="grid lg:grid-cols-2 gap-8 mb-8">
-        {/* Radar Chart */}
-        <div className="bg-white rounded-xl border border-gray-200 p-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6">Environmental Impact Profile</h3>
-          <div className="relative w-80 h-80 mx-auto">
-            {/* This would be replaced with an actual radar chart component */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-64 h-64 border-2 border-green-200 rounded-full relative">
-                <div className="absolute inset-4 border border-green-300 rounded-full"></div>
-                <div className="absolute inset-8 border border-green-400 rounded-full"></div>
-                <div className="absolute inset-12 border border-green-500 rounded-full"></div>
+      {/* Enhanced Tab Navigation */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-lg mb-8">
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8 px-6" aria-label="Tabs">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (tab.locked) {
+                    handleLeadCapture();
+                  } else {
+                    setActiveTab(tab.id as any);
+                  }
+                }}
+                className={`relative py-4 px-1 text-center border-b-2 font-medium text-sm transition-all duration-200 ${
+                  activeTab === tab.id && !tab.locked
+                    ? 'border-green-500 text-green-600'
+                    : tab.locked
+                    ? 'border-transparent text-gray-400 cursor-pointer hover:text-gray-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg">{tab.icon}</span>
+                  <span>{tab.label}</span>
+                  {tab.locked && (
+                    <Lock className="w-4 h-4 text-gray-400" />
+                  )}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">{tab.description}</div>
                 
-                {/* Data points */}
-                {Object.entries(environmentalProfile).map(([key, value], index) => {
-                  const angle = (index * 60) - 90; // 6 points, 60 degrees apart
-                  const radian = (angle * Math.PI) / 180;
-                  const radius = (value / 100) * 120; // Scale to chart size
-                  const x = Math.cos(radian) * radius + 128;
-                  const y = Math.sin(radian) * radius + 128;
-                  
-                  return (
-                    <div
-                      key={key}
-                      className="absolute w-3 h-3 bg-green-500 rounded-full transform -translate-x-1/2 -translate-y-1/2"
-                      style={{ left: x, top: y }}
-                    />
-                  );
-                })}
-                
-                {/* Labels */}
-                {Object.keys(environmentalProfile).map((key, index) => {
-                  const angle = (index * 60) - 90;
-                  const radian = (angle * Math.PI) / 180;
-                  const x = Math.cos(radian) * 140 + 128;
-                  const y = Math.sin(radian) * 140 + 128;
-                  
-                  return (
-                    <div
-                      key={key}
-                      className="absolute text-xs text-gray-600 transform -translate-x-1/2 -translate-y-1/2"
-                      style={{ left: x, top: y }}
-                    >
-                      {key}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Detailed Metrics */}
-        <div className="bg-white rounded-xl border border-gray-200 p-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6">Detailed Environmental Metrics</h3>
-          <div className="space-y-6">
-            {detailedMetrics.map((metric, index) => (
-              <div key={index} className={`p-4 rounded-lg bg-${metric.color}-50 border border-${metric.color}-200`}>
-                <div className="flex items-center space-x-3 mb-2">
-                  <span className="text-2xl">{metric.icon}</span>
-                  <h4 className={`font-semibold text-${metric.color}-900`}>{metric.title}</h4>
-                </div>
-                <div className={`text-2xl font-bold text-${metric.color}-700 mb-1`}>
-                  {metric.value}
-                </div>
-                <div className={`text-sm text-${metric.color}-600`}>
-                  {metric.subtitle}
-                </div>
-              </div>
+                {tab.locked && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-pulse" />
+                )}
+              </button>
             ))}
-          </div>
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        <div className="p-6">
+          {activeTab === 'metrics' && (
+            <div>
+              {/* Environmental Impact Profile - Similar to the image */}
+              <div className="grid lg:grid-cols-2 gap-8 mb-8">
+                {/* Radar Chart */}
+                <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl border border-green-200 p-8">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm">🌱</span>
+                    </div>
+                    <span>Environmental Impact Profile</span>
+                  </h3>
+                  <div className="relative w-80 h-80 mx-auto">
+                    {/* This would be replaced with an actual radar chart component */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-64 h-64 border-2 border-green-200 rounded-full relative">
+                        <div className="absolute inset-4 border border-green-300 rounded-full"></div>
+                        <div className="absolute inset-8 border border-green-400 rounded-full"></div>
+                        <div className="absolute inset-12 border border-green-500 rounded-full"></div>
+                        
+                        {/* Data points */}
+                        {Object.entries(environmentalProfile).map(([key, value], index) => {
+                          const angle = (index * 60) - 90; // 6 points, 60 degrees apart
+                          const radian = (angle * Math.PI) / 180;
+                          const radius = (value / 100) * 120; // Scale to chart size
+                          const x = Math.cos(radian) * radius + 128;
+                          const y = Math.sin(radian) * radius + 128;
+                          
+                          return (
+                            <div
+                              key={key}
+                              className="absolute w-3 h-3 bg-green-500 rounded-full transform -translate-x-1/2 -translate-y-1/2 shadow-lg"
+                              style={{ left: x, top: y }}
+                            />
+                          );
+                        })}
+                        
+                        {/* Labels */}
+                        {Object.keys(environmentalProfile).map((key, index) => {
+                          const angle = (index * 60) - 90;
+                          const radian = (angle * Math.PI) / 180;
+                          const x = Math.cos(radian) * 140 + 128;
+                          const y = Math.sin(radian) * 140 + 128;
+                          
+                          return (
+                            <div
+                              key={key}
+                              className="absolute text-xs font-medium text-gray-700 transform -translate-x-1/2 -translate-y-1/2"
+                              style={{ left: x, top: y }}
+                            >
+                              {key}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detailed Metrics */}
+                <div className="space-y-6">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm">📊</span>
+                    </div>
+                    <span>Detailed Environmental Metrics</span>
+                  </h3>
+                  <div className="space-y-4">
+                    {detailedMetrics.map((metric, index) => (
+                      <div key={index} className={`p-6 rounded-xl bg-gradient-to-r border-l-4 shadow-sm hover:shadow-md transition-shadow ${
+                        metric.color === 'blue' ? 'from-blue-50 to-blue-100 border-blue-500' :
+                        metric.color === 'orange' ? 'from-orange-50 to-orange-100 border-orange-500' :
+                        metric.color === 'purple' ? 'from-purple-50 to-purple-100 border-purple-500' :
+                        'from-green-50 to-green-100 border-green-500'
+                      }`}>
+                        <div className="flex items-center space-x-3 mb-3">
+                          <span className="text-3xl">{metric.icon}</span>
+                          <h4 className={`font-semibold text-lg ${
+                            metric.color === 'blue' ? 'text-blue-900' :
+                            metric.color === 'orange' ? 'text-orange-900' :
+                            metric.color === 'purple' ? 'text-purple-900' :
+                            'text-green-900'
+                          }`}>{metric.title}</h4>
+                        </div>
+                        <div className={`text-3xl font-bold mb-2 ${
+                          metric.color === 'blue' ? 'text-blue-700' :
+                          metric.color === 'orange' ? 'text-orange-700' :
+                          metric.color === 'purple' ? 'text-purple-700' :
+                          'text-green-700'
+                        }`}>
+                          {metric.value}
+                        </div>
+                        <div className={`text-sm ${
+                          metric.color === 'blue' ? 'text-blue-600' :
+                          metric.color === 'orange' ? 'text-orange-600' :
+                          metric.color === 'purple' ? 'text-purple-600' :
+                          'text-green-600'
+                        }`}>
+                          {metric.subtitle}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Financial Metrics */}
+              <div className="bg-white rounded-xl border border-gray-200 p-8 mb-8 shadow-lg">
+                <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                    <Euro className="w-4 h-4 text-white" />
+                  </div>
+                  <span>Financial Overview</span>
+                </h3>
+                <div className="grid md:grid-cols-4 gap-6">
+                  <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
+                    <div className="text-4xl font-bold text-green-600 mb-2">
+                      €{calculatedMetrics.totalInstallationCost.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-green-700 font-medium">Total Investment</div>
+                    <div className="text-xs text-green-600 mt-1">One-time cost</div>
+                  </div>
+                  <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+                    <div className="text-4xl font-bold text-blue-600 mb-2">
+                      €{calculatedMetrics.annualSavings.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-blue-700 font-medium">Annual Savings</div>
+                    <div className="text-xs text-blue-600 mt-1">Per year</div>
+                  </div>
+                  <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
+                    <div className="text-4xl font-bold text-purple-600 mb-2">
+                      {calculatedMetrics.paybackYears.toFixed(1)}
+                    </div>
+                    <div className="text-sm text-purple-700 font-medium">Payback Period</div>
+                    <div className="text-xs text-purple-600 mt-1">Years</div>
+                  </div>
+                  <div className="text-center p-6 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200">
+                    <div className="text-4xl font-bold text-orange-600 mb-2">
+                      {calculatedMetrics.totalCo2PerYear.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-orange-700 font-medium">Annual CO₂ Offset</div>
+                    <div className="text-xs text-orange-600 mt-1">kg per year</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Locked Content Preview */}
+          {(activeTab === 'charts' || activeTab === 'recommendations' || activeTab === 'reports') && (
+            <div className="text-center py-16">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl opacity-50 blur-sm"></div>
+                <div className="relative bg-white rounded-xl border-2 border-dashed border-gray-300 p-12">
+                  <Lock className="w-20 h-20 mx-auto mb-6 text-gray-400" />
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                    {activeTab === 'charts' && 'Advanced Charts & Analysis'}
+                    {activeTab === 'recommendations' && 'AI-Powered Recommendations'}
+                    {activeTab === 'reports' && 'Professional Reports'}
+                  </h3>
+                  <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+                    {activeTab === 'charts' && 'Unlock detailed 50-year projections, seasonal analysis, and interactive charts showing your roof\'s long-term environmental impact.'}
+                    {activeTab === 'recommendations' && 'Get personalized AI recommendations, expert insights, market trends, and connections to certified professionals in your area.'}
+                    {activeTab === 'reports' && 'Generate comprehensive PDF reports, executive summaries, and technical documentation for stakeholders and contractors.'}
+                  </p>
+                  
+                  {/* Preview Features */}
+                  <div className="grid md:grid-cols-3 gap-6 mb-8 opacity-60">
+                    {activeTab === 'charts' && (
+                      <>
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <BarChart3 className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+                          <div className="text-sm font-medium">50-Year Timeline</div>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <Calendar className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                          <div className="text-sm font-medium">Monthly Breakdown</div>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <Sun className="w-8 h-8 text-orange-500 mx-auto mb-2" />
+                          <div className="text-sm font-medium">Seasonal Analysis</div>
+                        </div>
+                      </>
+                    )}
+                    {activeTab === 'recommendations' && (
+                      <>
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <Brain className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+                          <div className="text-sm font-medium">AI Insights</div>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <Users className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+                          <div className="text-sm font-medium">Expert Network</div>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                          <div className="text-sm font-medium">Market Trends</div>
+                        </div>
+                      </>
+                    )}
+                    {activeTab === 'reports' && (
+                      <>
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <FileText className="w-8 h-8 text-red-500 mx-auto mb-2" />
+                          <div className="text-sm font-medium">PDF Reports</div>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <Mail className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+                          <div className="text-sm font-medium">Email Summary</div>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <Award className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+                          <div className="text-sm font-medium">Certifications</div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={handleLeadCapture}
+                    className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                  >
+                    Unlock Full Analysis - Get Free Consultation
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Key Financial Metrics */}
-      <div className="bg-white rounded-xl border border-gray-200 p-8 mb-8">
-        <h3 className="text-xl font-semibold text-gray-900 mb-6">Financial Overview</h3>
-        <div className="grid md:grid-cols-4 gap-6">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600 mb-2">
-              €{calculatedMetrics.totalInstallationCost.toLocaleString()}
-            </div>
-            <div className="text-sm text-gray-600">Total Investment</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600 mb-2">
-              €{calculatedMetrics.annualSavings.toLocaleString()}
-            </div>
-            <div className="text-sm text-gray-600">Annual Savings</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600 mb-2">
-              {calculatedMetrics.paybackYears.toFixed(1)} years
-            </div>
-            <div className="text-sm text-gray-600">Payback Period</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-orange-600 mb-2">
-              {calculatedMetrics.totalCo2PerYear.toLocaleString()} kg
-            </div>
-            <div className="text-sm text-gray-600">Annual CO₂ Offset</div>
-          </div>
+      {/* Success Message for Unlocked Content */}
+      {data.hasProvidedContact && (
+        <div className="bg-gradient-to-r from-green-500 to-blue-600 rounded-xl p-6 mb-8 text-white text-center">
+          <Unlock className="w-12 h-12 mx-auto mb-4" />
+          <h3 className="text-2xl font-bold mb-2">🎉 Full Analysis Unlocked!</h3>
+          <p className="text-lg opacity-90">
+            You now have access to all advanced features, detailed analysis, and professional tools.
+          </p>
         </div>
-      </div>
-
-      {/* Unlock More Content */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200 p-8 text-center">
-        <Lock className="w-16 h-16 mx-auto mb-4 text-blue-600" />
-        <h3 className="text-2xl font-bold text-gray-900 mb-4">Want to See More?</h3>
-        <p className="text-lg text-gray-600 mb-6">
-          Get access to detailed analysis, advanced charts, expert recommendations, and project management tools.
-        </p>
-        <div className="grid md:grid-cols-3 gap-4 mb-8 text-sm">
-          <div className="flex items-center space-x-2 text-gray-600">
-            <Lock className="w-4 h-4" />
-            <span>50-Year Impact Timeline</span>
-          </div>
-          <div className="flex items-center space-x-2 text-gray-600">
-            <Lock className="w-4 h-4" />
-            <span>AI-Powered Recommendations</span>
-          </div>
-          <div className="flex items-center space-x-2 text-gray-600">
-            <Lock className="w-4 h-4" />
-            <span>Expert Network Access</span>
-          </div>
-          <div className="flex items-center space-x-2 text-gray-600">
-            <Lock className="w-4 h-4" />
-            <span>Detailed Financial Analysis</span>
-          </div>
-          <div className="flex items-center space-x-2 text-gray-600">
-            <Lock className="w-4 h-4" />
-            <span>Project Management Tools</span>
-          </div>
-          <div className="flex items-center space-x-2 text-gray-600">
-            <Lock className="w-4 h-4" />
-            <span>Professional PDF Reports</span>
-          </div>
-        </div>
-        <button
-          onClick={handleLeadCapture}
-          className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-        >
-          Unlock Full Analysis - Get Free Consultation
-        </button>
-      </div>
+      )}
 
       {/* Lead Capture Modal */}
       <EnhancedLeadCaptureModal 
@@ -468,6 +640,74 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
         sessionStartTime={new Date()}
         onLeadCaptured={handleLeadCaptured}
       />
+    </div>
+  );
+};
+
+// Enhanced Unlocked Content Component
+const UnlockedContentTabs = ({ data, calculatedMetrics, chartData }: any) => {
+  const [activeTab, setActiveTab] = useState<'charts' | 'recommendations' | 'reports'>('charts');
+
+  return (
+    <div className="mt-8">
+      {/* Tab Content */}
+      {activeTab === 'charts' && (
+        <EnhancedCharts 
+          chartData={chartData}
+          roofType={data.roofType}
+          includeSolar={data.includeSolar}
+          totalCo2PerYear={calculatedMetrics.totalCo2PerYear}
+          totalEnergyPerYear={calculatedMetrics.totalEnergyPerYear}
+          noxPerYear={calculatedMetrics.noxPerYear}
+          location={data.location}
+        />
+      )}
+
+      {activeTab === 'recommendations' && (
+        <SmartRecommendations
+          roofSize={data.roofSize}
+          roofType={data.roofType}
+          includeSolar={data.includeSolar}
+          location={data.location}
+          totalCo2PerYear={calculatedMetrics.totalCo2PerYear}
+          totalEnergyPerYear={calculatedMetrics.totalEnergyPerYear}
+          totalInstallationCost={calculatedMetrics.totalInstallationCost}
+          onRecommendationApply={() => {}}
+        />
+      )}
+
+      {activeTab === 'reports' && (
+        <div className="text-center py-12">
+          <FileText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Professional Reports</h3>
+          <p className="text-gray-600 mb-8">
+            Generate comprehensive PDF reports with all your calculations, recommendations, and analysis.
+          </p>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="border border-gray-200 rounded-lg p-6">
+              <h4 className="font-semibold text-gray-900 mb-2">Executive Summary</h4>
+              <p className="text-sm text-gray-600 mb-4">High-level overview for decision makers</p>
+              <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                Generate PDF
+              </button>
+            </div>
+            <div className="border border-gray-200 rounded-lg p-6">
+              <h4 className="font-semibold text-gray-900 mb-2">Technical Report</h4>
+              <p className="text-sm text-gray-600 mb-4">Detailed specifications and analysis</p>
+              <button className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                Generate PDF
+              </button>
+            </div>
+            <div className="border border-gray-200 rounded-lg p-6">
+              <h4 className="font-semibold text-gray-900 mb-2">Financial Analysis</h4>
+              <p className="text-sm text-gray-600 mb-4">ROI, costs, and financial projections</p>
+              <button className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                Generate PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
