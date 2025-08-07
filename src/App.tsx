@@ -796,7 +796,10 @@ const MetricsStep = ({ data, onUpdate, calculatedMetrics, onUnlockContent }: any
                   </p>
                   <div className="bg-blue-50 rounded-lg p-4 mb-6 max-w-md mx-auto">
                     <div className="flex items-center space-x-2 text-sm text-blue-800">
-                      <HelpCircle className="w-4 h-4" />
+                      content={segment.roofType === 'Social Activities Area' 
+                        ? "Solar panels are not recommended for social activity areas as they would interfere with the intended use of the space."
+                        : "Solar panels can be installed on most roof types. They generate clean electricity and provide additional environmental benefits. About 70% of the roof area is typically usable for solar panels."
+                      }
                       <span>Provide your contact details to unlock advanced features and receive a detailed analysis report</span>
                     </div>
                   </div>
@@ -1100,15 +1103,21 @@ export default function RoofImpactWizard() {
                       isCurrent 
                         ? 'bg-blue-600 text-white' 
                         : isCompleted
+                      disabled={segment.roofType === 'Social Activities Area'}
                         ? 'bg-green-600 text-white'
-                        : 'bg-gray-300 text-gray-600'
+                      className={`w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 ${
+                        segment.roofType === 'Social Activities Area' ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                     }`}>
                       {isCompleted ? '✓' : index + 1}
-                    </div>
+                      {segment.roofType === 'Social Activities Area' 
+                        ? 'Not suitable for social areas' 
+                        : segment.includeSolar ? '✓ Included' : 'Not included'
+                      }
                     <div className="text-left">
                       <div className="font-medium">{step.title}</div>
                       <div className="text-xs opacity-75">{step.description}</div>
-                    </div>
+                  {segment.includeSolar && segment.roofType !== 'Social Activities Area' && (
                   </button>
                   {index < steps.length - 1 && (
                     <ChevronRight className="w-5 h-5 text-gray-400" />
