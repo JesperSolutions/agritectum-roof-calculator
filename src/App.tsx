@@ -269,10 +269,7 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-8">
         <Settings className="w-16 h-16 mx-auto mb-4 text-purple-600" />
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">Configure Your Roof System</h2>
-        <p className="text-lg text-gray-600">
-          Enter your total roof size, then add segments with percentages for different solutions.
-        </p>
+        <h2 className="text-3xl font-bold text-gray-900 mb-4">Start Designing Your Roof For Good</h2>
         <div className="mt-4 flex items-center justify-center space-x-2 text-sm text-gray-500">
           <HelpCircle className="w-4 h-4" />
           <span>Hover over the question marks for helpful explanations</span>
