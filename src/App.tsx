@@ -88,7 +88,7 @@ const UserRoleStep = ({ data, onUpdate, onNext }: any) => {
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-8">
         <User className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">Welcome to the Roof For Good Calculator</h2>
+        <h2 className="text-3xl font-bold text-gray-900 mb-4">Welcome to the Roof Impact Calculator</h2>
         <p className="text-lg text-gray-600">
           Let's personalize your experience. What best describes your role?
         </p>
@@ -269,7 +269,7 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-8">
         <Settings className="w-16 h-16 mx-auto mb-4 text-purple-600" />
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">Start Designing Your Roof For Good</h2>
+        <h2 className="text-3xl font-bold text-gray-900 mb-4">Configure Your Roof System</h2>
         <p className="text-lg text-gray-600">
           Enter your total roof size, then add segments with percentages for different solutions.
         </p>
