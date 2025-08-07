@@ -191,7 +191,36 @@ const LocationStep = ({ data, onUpdate, onNext, onBack }: any) => {
 
 const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
   const [totalRoofSize, setTotalRoofSize] = useState(data.totalRoofSize || 1000);
-  const [roofSegments, setRoofSegments] = useState<RoofSegment[]>(data.roofSegments || []);
+  const [roofSegments, setRoofSegments] = useState<RoofSegment[]>(data.roofSegments || [
+    {
+      id: '1',
+      name: 'Green Roof Area',
+      percentage: 25,
+      roofType: 'Green Roof System',
+      includeSolar: false
+    },
+    {
+      id: '2', 
+      name: 'NOₓ Reduction Area',
+      percentage: 25,
+      roofType: 'Photocatalytic Coating',
+      includeSolar: false
+    },
+    {
+      id: '3',
+      name: 'Cool Roof Area', 
+      percentage: 25,
+      roofType: 'White - Cool Roof Coating',
+      includeSolar: false
+    },
+    {
+      id: '4',
+      name: 'Social Activities Area',
+      percentage: 25,
+      roofType: 'Social Activities Area',
+      includeSolar: false
+    }
+  ]);
 
   const addSegment = () => {
     const usedPercentage = roofSegments.reduce((sum, segment) => sum + segment.percentage, 0);
@@ -472,16 +501,6 @@ const RoofConfigurationStep = ({ data, onUpdate, onNext, onBack }: any) => {
                       <div className="text-sm text-gray-600">Years Lifespan</div>
                     </div>
                   </div>
-                  
-                  {/* Special info for social activities */}
-                  {segment.roofType === 'Social Activities Area' && (
-                    <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                      <div className="text-sm text-orange-800">
-                        <strong>Social Benefits:</strong> This area can accommodate up to 20 people for meetings and relaxation activities. 
-                        Includes furniture, plants, and creates valuable community space.
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             );
