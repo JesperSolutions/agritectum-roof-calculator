@@ -98,5 +98,18 @@ export const ROOF_TYPES = {
     totalCost: 30.00,
     installationRate: 15,
     description: 'High-performance membrane optimized for solar panel installation'
+  },
+  "Social Activities Area": {
+    co2: 0.5,
+    nox: 0.02,
+    energy: 0,
+    lifespan: 25,
+    maintenance: 'Regular furniture maintenance and plant care',
+    color: '#F59E0B',
+    materialCost: 60.00,
+    laborCost: 4.00,
+    totalCost: 64.00,
+    installationRate: 5, // Slower due to furniture and plant installation
+    description: 'Social relaxation area with furniture and plants for meetings and activities (250m² capacity for 20 people)'
   }
 } as const;
