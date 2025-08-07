@@ -915,6 +915,35 @@ export default function RoofImpactWizard() {
     roofSegments: [
       {
         id: '1',
+        name: 'Green Roof Area',
+        percentage: 25,
+        roofType: 'Green Roof System',
+        includeSolar: false
+      },
+      {
+        id: '2',
+        name: 'NOₓ Reduction Area',
+        percentage: 25,
+        roofType: 'Photocatalytic Coating',
+        includeSolar: false
+      },
+      {
+        id: '3',
+        name: 'Cool Roof Area',
+        percentage: 25,
+        roofType: 'White - Cool Roof Coating',
+        includeSolar: false
+      },
+      {
+        id: '4',
+        name: 'Social Activities Area',
+        percentage: 25,
+        roofType: 'Social Activities Area',
+        includeSolar: false
+      }
+    ],
+      {
+        id: '1',
         name: 'Photocatalytic Coating',
         percentage: 60,
         roofType: 'Photocatalytic Coating',
